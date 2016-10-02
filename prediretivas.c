@@ -33,8 +33,21 @@ char *deixaMaiusculo(char *string){
 	}
 
 	return string;
-
 }
+
+/*Funcao que verifica se tem label com a diretiva EQU na string recebida, que sera uma linha do arquivo fonte*/
+/*Se tiver, retorna 1, senao retorna 0*/
+int verificaLabelseEQU(char *string){
+	char *ptr = NULL, *ptr2 = NULL;
+	ptr = strpbrk(string, ":"); /*o ponteiro recebera o local que aparece a primeira ocorrencia do char :*/
+	ptr2 = strstr(string, "EQU");/*o ponteiro recebera o local que aprece a primeira ocorrencia da string "EQU"*/
+
+	if(ptr != NULL && ptr2 != NULL) return 1; /*Possui uma label na linha e a diretiva EQU*/
+
+	return 0; /*Por default, assumir que nao tem a diretiva EQU e nem uma label*/
+}
+
+/*Funcao que pega a label do EQU e o valor que esta sendo atribuido*/
 
 
 /*Funcao que verifica se tem comentarios na string recebida, que no caso, sera uma linha do arquivo fonte*/
@@ -42,20 +55,33 @@ char *deixaMaiusculo(char *string){
 int verificaComentarios(char *string){
 
 	char *ptr = NULL;
-
 	ptr = strpbrk(string, ";"); /*a funcao strpbrk localiza um char dentro de uma string*/
 
 	if(ptr != NULL) return 1; /*possui comentario*/
 
     return 0; /*Por default, assumir que nao tem comentarios na linha*/
-
 }
 
 /*Funcao que retira os comentarios da string recebida, que no caso, sera uma linha do arquivo fonte*/
 /*Funcao retornara a string sem os comentarios */
 char *retiraComentarios(char *string){
 
-	return ;
+	char *ptr = NULL;
+	int lenghtString = strlen(string), i = 0, lengthStringAuxiliar = 0;
+
+	ptr = strpbrk(string, ";");
+
+	if(ptr == NULL){
+		printf("Nao existe comentario na linha\n");
+	}
+
+	lengthStringAuxiliar = strlen(ptr); /*recebe o tamanho da string que possui o comentario*/
+
+	for(i = 0; i < lengthStringAuxiliar; i++){
+		*(ptr + i) = '\0'; /*coloca \0 no lugar do comentario*/
+	}
+
+	return string;
 }
 
 /*Funcao que verifica se tem a diretiva IF na string recebida, que sera a linha do arquivo fonte*/
@@ -64,7 +90,6 @@ int verificarIF(char *string){
 	/*Essa funcao ja assume que todos os chars da string ja estao maiusculos*/
 
 	char *ptr = NULL;
-
 	ptr = strstr(string, "IF"); /*a funcao strstr localiza uma substring dentro de uma string*/
 
 	if(ptr != NULL && (ptr+2) == ' ') return 1; /*possui a diretiva IF com espaco logo apos a diretiva*/
