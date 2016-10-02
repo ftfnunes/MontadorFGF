@@ -28,8 +28,15 @@ int isLabel(char *str){
 
 int main(){
 	FILE *fp = fopen("testeMacro.asm", "r");
-	char buffer1[50], buffer2[50], b3[50], b4[50], b5[50], b6[50], b7[50];
+	char buffer1[50], buffer2[50], b3[50], b4[50], b5[50], b6[50], b7[50], buffers[] = "LABEL1:", *b;
 	int i, linha, n1, n2, n3;
+
+	printf("%s\n", buffers);
+	buffers[strlen(buffers)-1] = '\0';
+	b = (char *)malloc((strlen(buffers))*sizeof(char));
+	strcpy(b, buffers);
+	printf("%s\n", b);
+	getchar();
 
 
 	//for(i=0; i<20; ++i){
@@ -44,6 +51,8 @@ int main(){
 		//printf("%d %d %d %d\n", isLabel(buffer2), isLabel(b3), isLabel(b4), isLabel(b5));
 		getchar();
 	}
+
+
 
 	fclose(fp);
 
