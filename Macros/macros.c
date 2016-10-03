@@ -90,12 +90,20 @@ void busca_macros(FILE *fp, FILE *final){
 			/* Tem que passar a label e os argumentos. */
 			++flagText;
 			numArgs = tokensLidos - 2;
+			for(i = 0; i < numArgs; ++i){
+				if(buffers[i+1][strlen(buffers[i+1])-1] == ',')
+					buffers[i+1][strlen(buffers[i+1])-1] = '\0';
+			}
 			expande_macros(final, &lista, buffers[0], &(buffers[1]), numArgs, linha);
 		}
 		if(isMacro(buffers[1], &lista) == 0){
 			/* Tem que passar a label e os argumentos. */
 			++flagText;
 			numArgs = tokensLidos - 3;
+			for(i = 0; i < numArgs; ++i){
+				if(buffers[i+2][strlen(buffers[i+2])-1] == ',')
+					buffers[i+2][strlen(buffers[i+2])-1] = '\0';
+			}
 			expande_macros(final, &lista, buffers[1], &(buffers[2]), numArgs, linha);
 		}
 
@@ -346,6 +354,8 @@ void addArg(char *arg, lMacro **macro){
 
 	if(buffer[strlen(buffer)-1] == ',')
 		buffer[strlen(buffer)-1] = '\0';
+
+	printf("Arg antes: %s\nArg depois: %s\n\n", arg, buffer);
 
 	if((*macro)->numArgs == 0){
 		(*macro)->args = (char **)malloc(sizeof(char *));
