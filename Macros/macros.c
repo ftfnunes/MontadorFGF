@@ -6,12 +6,13 @@
 
 /*
 	Esta função retorna um ponteiro para caracteres alocado dinâmicamente com o nome do arquivo gerado após as expansões das macros.
-	O arquivo de entrada possui como primeiro elemento da linha o número da linha no arquivo original. 
+	O arquivo de entrada possui como primeiro elemento da linha o número da linha no arquivo original.
 */
-char *macros_expandidas(char *arq_pre_processado){
+char *macros_expandidas(char *arq_pre_processado, char *nomeArqEntrada){
 	FILE *fp, *final;
-	char *nome_arqfinal, nome[16] = "saidaMacros.asm"; /*Nome do arquivo de saída: saidaMacros.asm*/
-	lMacro *listaMacros;
+	char *nome_arqfinal, nome[50];
+
+	sprintf(nome, "%s.mcr", nomeArqEntrada);
 
 	fp = fopen(arq_pre_processado, "r");
 	if(!fp){
@@ -26,7 +27,7 @@ char *macros_expandidas(char *arq_pre_processado){
 	}
 
 
-	nome_arqfinal = (char *)malloc(16*sizeof(char));
+	nome_arqfinal = (char *)malloc((strlen(nome))*sizeof(char));
 	if(!nome_arqfinal){
 		printf("Erro ao alocar memória para o 'nome_arqfinal'.\n");
 		exit(1); /* Sai do programa se não for possível alocar memória para o nome do arquivo de saída. */
@@ -34,26 +35,21 @@ char *macros_expandidas(char *arq_pre_processado){
 	strcpy(nome_arqfinal, nome);
 
 
-	listaMacros = busca_macros(fp);
-
-	if(expande_macros(fp, final, &listaMacros)){
-		printf("Erro no retorno da função 'expande_macros'.\n");
-		exit(1); /* Se a função retornar algo diferente de 0, houve erro. */
-	}
+	busca_macros(fp, final);
 
 
-
+	/*liberaLMacro(listaMacros);*/
 	fclose(fp);
 	fclose(final);
 	return nome_arqfinal;
-	/* Depois lembrar de desalocar a memória desse ponteiro.*/
+	/* Depois lembrar de desalocar a memória desse ponteiro "nome_arqfinal".*/
 }
 
-lMacro *busca_macros(FILE *fp){
+void busca_macros(FILE *fp, FILE *final){
 	char bufferLinha[300], **buffers;
 	FILE *auxFile;
 	lMacro *lista = NULL, *new;
-	int linha, i, tokensLidos;
+	int linha, i, tokensLidos, flagText = 0, numArgs;
 
 
 	if(!fp){
@@ -75,18 +71,36 @@ lMacro *busca_macros(FILE *fp){
 	auxFile = fp;
 	while(fgets(bufferLinha, 300, fp) != NULL){
 		/* TokensNaLinha é o número de strings efetivamente lidas.*/
-		tokensLidos = sscanf(bufferLinha, "%d %s %s %s %s %s %s %s", &linha, buffers[0], buffers[1], buffers[2], 
+		tokensLidos = sscanf(bufferLinha, "%d %s %s %s %s %s %s %s", &linha, buffers[0], buffers[1], buffers[2],
 								buffers[3], buffers[4], buffers[5], buffers[6]);
 
-		if(tokensLidos == 1){
+		printf("%d %s %s %s %s %s %s %s\n", linha, buffers[0], buffers[1], buffers[2], buffers[3], buffers[4], buffers[5], buffers[6]);
+
+		if(tokensLidos <= 1){
 			for(i = 0; i < 7; ++i)
-				strcpy(buffers[i], "-1");
+				strcpy(buffers[i], "\0");
+			flagText = 0;
 			continue;
 		}
 
+		to_upcase(buffers, 0, strlen(buffers[0]));
 		to_upcase(buffers, 1, strlen(buffers[1]));
 
+		if(isMacro(buffers[0], &lista) == 0){
+			/* Tem que passar a label e os argumentos. */
+			++flagText;
+			numArgs = tokensLidos - 2;
+			expande_macros(final, &lista, buffers[0], &(buffers[1]), numArgs, linha);
+		}
+		if(isMacro(buffers[1], &lista) == 0){
+			/* Tem que passar a label e os argumentos. */
+			++flagText;
+			numArgs = tokensLidos - 3;
+			expande_macros(final, &lista, buffers[1], &(buffers[2]), numArgs, linha);
+		}
+
 		if(isLabel(buffers[0]) == 0 && strcmp(buffers[1], "MACRO") == 0){
+			++flagText;
 			new = createLMacro();
 			new->prox = lista;
 			lista = new;
@@ -95,35 +109,49 @@ lMacro *busca_macros(FILE *fp){
 			buffers[0][strlen(buffers[0])-1] = '\0';
 			new->label = (char *)malloc((strlen(buffers[0]))*sizeof(char));
 			strcpy(new->label, buffers[0]);
+			to_upcase(&(new->label), 0, strlen(new->label));
+
+			temMacroIgual(new, &lista);
 
 			/* Adiciona os argumentos da função no nó*/
 			for(i = 0; i < (tokensLidos-3); ++i)
-				addArg(buffers[i+2], &new);
+				addArg(buffers[i+2], &lista);
 
 
 			fp = registra_macro(auxFile, &lista); /* Encontrou a label de uma macro e começa o processo de registá-la.*/
 
 		}
 
+		if(!flagText){
+			if(linha == 7)
+				printf("Chegou aqui. tokensLidos == %d.\n", tokensLidos);
+			fprintf(final, "%d", linha);
+			for(i = 0; i < tokensLidos; ++i){
+				fprintf(final, " %s", buffers[i]);
+			}
+			fprintf(final, "\n");
+		}
+
 		for(i = 0; i < 7; ++i)
-			strcpy(buffers[i], "-1");
+			strcpy(buffers[i], "\0");
 
 		auxFile = fp;
+		flagText = 0;
 	}
 
-	
+
 	for(i = 0; i < 7; ++i){
 		free(buffers[i]);
 	}
 	free(buffers);
-
-	return lista;
+	
+	liberaLMacro(&lista);
 }
 
 
 FILE *registra_macro(FILE *fp, lMacro **lista){
-	char **buffers, bufferLinha[300], bufferDef[300];
-	int linha, i, tokensLidos;
+	char **buffers, bufferLinha[200];
+	int linha, i, tokensLidos, numArgs;
 
 	buffers = (char **)malloc(7*sizeof(char *));
 	if(!buffers){
@@ -134,40 +162,68 @@ FILE *registra_macro(FILE *fp, lMacro **lista){
 		buffers[i] = (char *)malloc(60*sizeof(char));
 
 	for(i = 0; i < 7; ++i)
-		strcpy(buffers[i], "-1");
+		strcpy(buffers[i], "\0");
 
-	
+
 
 	while(fgets(bufferLinha, 300, fp) != NULL){
 		/* TokensNaLinha é o número de strings efetivamente lidas.*/
-		tokensLidos = sscanf(bufferLinha, "%d %s %s %s %s %s %s %s", &linha, buffers[0], buffers[1], buffers[2], 
+		tokensLidos = sscanf(bufferLinha, "%d %s %s %s %s %s %s %s", &linha, buffers[0], buffers[1], buffers[2],
 								buffers[3], buffers[4], buffers[5], buffers[6]);
 
 		if(tokensLidos == 1){
 			for(i = 0; i < 7; ++i)
-				strcpy(buffers[i], "-1");
+				strcpy(buffers[i], "\0");
 
 			continue;
 		}
 
+		/* 	Expandir caso encontrar uma macro já registrada!
+			O atributo "linha" da estrutura armazena a linha de 'ENDMACRO'.
+
+		*/
+
+		if((*lista) != NULL && isMacro(buffers[0], lista) == 0){
+			numArgs = tokensLidos - 2;
+			for(i=0; i < tokensLidos-1; ++i){
+				if(buffers[i][strlen(buffers[i])-1] == ',')
+					buffers[i][strlen(buffers[i])-1] = '\0';
+			}
+			copia_macro(lista, buffers[0], &(buffers[1]), numArgs);
+			for(i = 0; i < 7; ++i)
+				strcpy(buffers[i], "\0");
+			continue;
+		}
+
+		if((*lista) != NULL && isMacro(buffers[1], lista) == 0){
+			numArgs = tokensLidos - 3;
+			for(i=0; i < tokensLidos-1; ++i){
+				if(buffers[i][strlen(buffers[i])-1] == ',')
+					buffers[i][strlen(buffers[i])-1] = '\0';
+			}
+			copia_macro(lista, buffers[1], &(buffers[2]), numArgs);
+			for(i = 0; i < 7; ++i)
+				strcpy(buffers[i], "\0");
+			continue;
+		}
+
+
 		to_upcase(buffers, 0, strlen(buffers[0]));
 		to_upcase(buffers, 1, strlen(buffers[1]));
-		if(strcmp(buffers[0], "ENDMACRO") == 0 || strcmp(buffers[1], "ENDMACRO") == 0)
+		if(strcmp(buffers[0], "ENDMACRO") == 0 || strcmp(buffers[1], "ENDMACRO") == 0){
 			break;
-
-		strcpy(bufferDef, buffers[0]);
-		for(i = 1; i < (tokensLidos-1); ++i){
-			sprintf(bufferDef, "%s %s", bufferDef, buffers[i]);
 		}
-		sprintf(bufferDef, "%s%c", bufferDef, '\n');
-
-		addDef(bufferDef, lista);
 
 
-
+		for(i=0; i < tokensLidos-1; ++i){
+			if(i > 0 && strcmp(buffers[i-1], "COPY") != 0 && buffers[i][strlen(buffers[i])-1] == ',')
+				buffers[i][strlen(buffers[i])-1] = '\0';
+			addDef(buffers[i], lista);
+		}
+		addDef("\n\0", lista);
 
 		for(i = 0; i < 7; ++i)
-			strcpy(buffers[i], "-1");
+			strcpy(buffers[i], "\0");
 	}
 
 
@@ -178,11 +234,80 @@ FILE *registra_macro(FILE *fp, lMacro **lista){
 	return fp;
 }
 
-int expande_macros(FILE *fp, FILE *final, lMacro **macros){
+void copia_macro(lMacro **lista, char *label, char **args, int numArgs){
+	lMacro *aux;
+	int i, j;
+	char buffer[100];
 
-	liberaLMacro(macros);
-	return 0;
+	for(aux = (*lista); aux; aux = aux->prox){
+		if(strcmp(label, aux->label) == 0)
+			break;
+	}
+
+	for(i = 0; i < aux->numDef; ++i){
+		strcpy(buffer, aux->def[i]);
+
+		(*lista)->def = (char **)realloc((*lista)->def, (((*lista)->numDef)+1)*sizeof(char *));
+
+		for(j = 0; j < aux->numArgs; ++j){
+			if(strcmp(buffer, aux->args[j]) == 0)
+				strcpy(buffer, args[j]);
+		}
+
+		(*lista)->def[(*lista)->numDef] = (char *)malloc(strlen(buffer)*sizeof(char));
+		strcpy((*lista)->def[(*lista)->numDef], buffer);
+
+		++((*lista)->numDef);
+	}
+
 }
+
+void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha){
+	lMacro *aux;
+	char buffer[300];
+	int i, j;
+
+	if(linha == 7){
+		printf("\nLabel linha 7: %s\n", (*lista)->label);
+		for(i = 0; i < (*lista)->numDef; ++i)		{
+			printf("Def %d: %s\n", i, (*lista)->def[i]);
+		}
+	}
+
+	/* Encontra na lista a macro a ser expandida.*/
+	for(aux = (*lista); aux != NULL; aux = aux->prox){
+		if(strcmp(aux->label, label) == 0){
+            break;
+		}
+
+	}
+
+	fprintf(final, "%d", linha);
+	for(i = 0; i < aux->numDef; ++i){
+		if(strcmp(aux->def[i], "\n") == 0 && i == (aux->numDef -1)){
+			fprintf(final, "\n");
+			break;
+		}
+
+		if(strcmp(aux->def[i], "\n") == 0)
+			fprintf(final, "\n%d", linha);
+		else{
+			strcpy(buffer, aux->def[i]);
+
+			/* Se o que está em buffer é um dos argumentos da macro, coloca em buffer o valor do argumento na instanciação.*/
+			for(j = 0; j < aux->numArgs; ++j){
+				if(strcmp(buffer, aux->args[j]) == 0)
+					strcpy(buffer, args[j]);
+			}
+
+			fprintf(final, " %s", buffer);
+		}
+
+	}
+
+	return;
+}
+
 
 lMacro *createLMacro(){
 	lMacro *new = (lMacro *)malloc(sizeof(lMacro));
@@ -194,9 +319,9 @@ lMacro *createLMacro(){
 
 	new->prox = NULL;
 	new->def = NULL;
-	new->args = NULL; 
+	new->args = NULL;
 	new->linha = -1;
-	new->numLinhasDef = 0;
+	new->numDef = 0;
 	new->numArgs = 0;
 	return new;
 }
@@ -224,10 +349,10 @@ void addArg(char *arg, lMacro **macro){
 
 	if((*macro)->numArgs == 0){
 		(*macro)->args = (char **)malloc(sizeof(char *));
-		
+
 	}
 	else{
-		(*macro)->args = (char **)realloc((*macro)->args, (((*macro)->numArgs)+1)*sizeof(char *));		
+		(*macro)->args = (char **)realloc((*macro)->args, (((*macro)->numArgs)+1)*sizeof(char *));
 	}
 
 	(*macro)->args[(*macro)->numArgs] = (char *)malloc(strlen(buffer)*sizeof(char));
@@ -238,22 +363,41 @@ void addArg(char *arg, lMacro **macro){
 
 void addDef(char *def, lMacro **macro){
 
-	char buffer[300];
+	char buffer[100];
 
 	strcpy(buffer, def);
 
-	if((*macro)->numLinhasDef == 0){
+	if((*macro)->def == NULL){
 		(*macro)->def = (char **)malloc(sizeof(char *));
-		
+
 	}
 	else{
-		(*macro)->def = (char **)realloc((*macro)->def, (((*macro)->numLinhasDef)+1)*sizeof(char *));		
+		(*macro)->def = (char **)realloc((*macro)->def, (((*macro)->numDef)+1)*sizeof(char *));
 	}
 
-	(*macro)->def[(*macro)->numLinhasDef] = (char *)malloc(strlen(buffer)*sizeof(char));
-	strcpy((*macro)->def[(*macro)->numLinhasDef], buffer);
+	(*macro)->def[(*macro)->numDef] = (char *)malloc(strlen(buffer)*sizeof(char));
+	strcpy((*macro)->def[(*macro)->numDef], buffer);
 
-	++((*macro)->numLinhasDef);
+	++((*macro)->numDef);
+}
+
+void temMacroIgual(lMacro *new, lMacro **lista){
+	lMacro *aux = (*lista);
+	int ocorrencia = 0;
+
+	if(!new || !aux)
+		return;
+
+	while(aux){
+		if(strcmp(new->label, aux->label) == 0){
+			++ocorrencia;
+		}
+
+		if(ocorrencia > 1)
+			printf("ERRO: A Macro '%s' esta declarada %d vezes. Somente sua ultima declaracao sera considerada.\n", new->label, ocorrencia);
+
+		aux = aux->prox;
+	}
 }
 
 
@@ -264,33 +408,51 @@ int liberaLMacro(lMacro **lista){
 	while(aux1 != NULL){
 		aux2 = aux1->prox;
 
-		printf("Dentro libera: %s\n", aux1->label);
-
 		if(aux1->label != NULL)
 			free(aux1->label);
-		printf("Liberou Label.\n");
 
 		if(aux1->def){
-			for(i = 0; i < aux1->numLinhasDef; ++i)
+			for(i = 0; i < aux1->numDef; ++i)
 				free(aux1->def[i]);
 			free(aux1->def);
 		}
-		printf("Liberou def.\n");
 
 		if(aux1->args){
 			for(i = 0; i < aux1->numArgs; ++i)
 				free(aux1->args[i]);
 			free(aux1->args);
 		}
-		printf("Liberou args.\n");		
 
 		free(aux1);
-		printf("Liberou no.\n");
 
 		aux1 = aux2;
 	}
 
 	return 0;
+}
+
+/* Retorna zero, caso exista uma macro com tal label.*/
+int isMacro(char *lb, lMacro **macros){
+	lMacro *aux = (*macros);
+	int i = 1;
+
+	if(!(*macros))
+        return 1;
+
+	if(!lb){
+		printf("String invalida na funcao 'isMacro'.\n");
+		exit(1);
+	}
+
+	while(aux){
+		if(strcmp(lb, aux->label) == 0){
+			--i;
+			break;
+		}
+		aux = aux->prox;
+	}
+
+	return i;
 }
 
 
@@ -331,27 +493,10 @@ void to_upcase(char **buffers, int word, int len){
 }
 
 int main(){
-	FILE *fp = fopen("testeMacro.asm", "r");
-	lMacro *new, *aux;
-	int i;
+	char *nome;
 
-	new = busca_macros(fp);
+	nome = macros_expandidas("testeMacro.asm", "testeMacro");
+	printf("%s\n", nome);
 
-	aux = new;
-
-	while(aux != NULL){
-		printf("linhasDef: %d\nlabel: %s\n", aux->numLinhasDef, aux->label);
-		for(i = 0; i < aux->numLinhasDef; ++i){
-			printf("%s", aux->def[i]);
-			getchar();
-		}
-		
-
-		aux = aux->prox;
-	}
-
-	liberaLMacro(&new);
-
-	fclose(fp);
 	return 0;
 }
