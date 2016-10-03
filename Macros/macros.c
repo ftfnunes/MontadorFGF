@@ -3,18 +3,24 @@
 #include <string.h>
 #include "macros.h"
 
+/*
+	Para realizar a expansão das macros, é necessário chamar somente a função macros_expandidas, com o seguinte argumento:
+
+	-> arp_pre_processado: nome do arquivo pré-processado sem a extensão.
+*/
 
 /*
 	Esta função retorna um ponteiro para caracteres alocado dinâmicamente com o nome do arquivo gerado após as expansões das macros.
 	O arquivo de entrada possui como primeiro elemento da linha o número da linha no arquivo original.
 */
-char *macros_expandidas(char *arq_pre_processado, char *nomeArqEntrada){
+char *macros_expandidas(char *arq_pre_processado){
 	FILE *fp, *final;
-	char *nome_arqfinal, nome[50];
+	char *nome_arqfinal, nome[50], arq_pre_process[50];
 
-	sprintf(nome, "%s.mcr", nomeArqEntrada);
+	sprintf(arq_pre_process, "%s.asm", arq_pre_processado);
+	sprintf(nome, "%s.mcr", arq_pre_processado);
 
-	fp = fopen(arq_pre_processado, "r");
+	fp = fopen(arq_pre_process, "r");
 	if(!fp){
 		printf("Erro ao abrir o arquivo 'arq_pre_processado'.\n");
 		exit(1); /* Sai se o arquivo pre-processado não for aberto.*/
@@ -500,13 +506,4 @@ void to_upcase(char **buffers, int word, int len){
 			buffers[word][i] -= 32;
 	}
 
-}
-
-int main(){
-	char *nome;
-
-	nome = macros_expandidas("testeMacro.asm", "testeMacro");
-	printf("%s\n", nome);
-
-	return 0;
 }
