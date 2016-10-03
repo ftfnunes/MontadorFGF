@@ -77,6 +77,7 @@ void busca_macros(FILE *fp, FILE *final){
 	auxFile = fp;
 	while(fgets(bufferLinha, 300, fp) != NULL){
 		/* TokensNaLinha é o número de strings efetivamente lidas.*/
+		printf("Chegou no loop.\n");
 		tokensLidos = sscanf(bufferLinha, "%d %s %s %s %s %s %s %s", &linha, buffers[0], buffers[1], buffers[2],
 								buffers[3], buffers[4], buffers[5], buffers[6]);
 
@@ -506,4 +507,13 @@ void to_upcase(char **buffers, int word, int len){
 			buffers[word][i] -= 32;
 	}
 
+}
+
+int main(){
+	char *nome;
+
+	nome = macros_expandidas("testeMacro");
+
+	free(nome);
+	return 0;
 }

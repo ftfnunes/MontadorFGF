@@ -13,7 +13,7 @@ typedef struct listaMacros{
 void busca_macros(FILE *fp, FILE *final);
 void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha);
 FILE *registra_macro(FILE *fp, lMacro **lista);
-char *macros_expandidas(char *arq_pre_processado, char *nomeArqEntrada);
+char *macros_expandidas(char *arq_pre_processado);
 void addArg(char *arg, lMacro **macro);
 void addDef(char *def, lMacro **macro);
 
