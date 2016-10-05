@@ -15,7 +15,7 @@ int main(){
 
 	if(ts != NULL){
 		for(sym = ts->first; sym != NULL; sym = sym->next){
-			printf("%s : %d\n", sym->token, sym->value);
+			printf("%s : %d, %d\n", sym->token, sym->value, sym->is_const);
 		}
 		second_pass(infp, ts, outfp);
 	}
