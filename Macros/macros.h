@@ -11,7 +11,7 @@ typedef struct listaMacros{
 
 /* Funções relacionadas a arquivos. */
 void busca_macros(FILE *fp, FILE *final);
-void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha);
+void processa_macros(char *arq_pre_processado);
 FILE *registra_macro(FILE *fp, lMacro **lista);
 char *macros_expandidas(char *arq_pre_processado);
 void addArg(char *arg, lMacro **macro);
@@ -21,9 +21,10 @@ void addDef(char *def, lMacro **macro);
 lMacro *createLMacro();
 void addMacro(lMacro *n, lMacro **lista);
 int liberaLMacro();
-void temMacroIgual(lMacro *new, lMacro **lista);
+void temMacroIgual(lMacro *new, lMacro **lista, int linha);
 int isMacro(char *lb, lMacro **macros);
 void copia_macro(lMacro **lista, char *label, char **args, int numArgs);
+void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha);
 
 int isNumber(char *str);
 int isLabel(char *str);
