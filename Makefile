@@ -1,6 +1,6 @@
 IDIR =./include
 CC=gcc
-CFLAGS=-I$(IDIR)
+CFLAGS=-ansi -Wall -I$(IDIR)
 
 SRC_DIR = ./src
 
