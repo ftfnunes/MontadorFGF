@@ -127,8 +127,8 @@ int read_number_token(char *buffer, FILE* fp){
 		return OK;
 	}
 	else if(c_type == INVALID){
-		buffer[i] = c_temp;
-		buffer[i+1] = '\0';
+		buffer[1] = c_temp;
+		buffer[2] = '\0';
 		return INVALID;
 	}
 	buffer[1] = c_temp;
@@ -192,7 +192,6 @@ table *create_tb(){
 
 /*Cria uma lista de tokens presentes numa linha*/
 symbol *get_line(FILE *fp){
-	int t_type;
 	symbol *first = NULL, *last = NULL;
 
 	first = last = get_token(fp);
@@ -293,7 +292,6 @@ int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_
 
 int strtoint(char *nstr){
 	int num = 0, count = 1, i;
-	char **ptr;
 
 	if(nstr[0] == '0' && nstr[1] == 'X'){
 		for(i = 2; nstr[i] != '\0'; i++){
@@ -309,7 +307,6 @@ int strtoint(char *nstr){
 }
 
 int second_pass(FILE *infp, table *ts, FILE *outfp){
-	int add_count = 0;
 	int error_flag = OK;
 	symbol *line, *smbl;
 	int num_of_args, inst_code, dir_code;
