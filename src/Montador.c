@@ -5,8 +5,6 @@
 #include "macros.h"
 
 
-
-
 /*
 	"argc" deve ser igual a 3. Seus argumentos são:
 
