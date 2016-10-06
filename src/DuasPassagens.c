@@ -310,7 +310,7 @@ int strtoint(char *nstr){
 
 int second_pass(FILE *infp, table *ts, FILE *outfp){
 	int add_count = 0;
-	int error_flag = 0;
+	int error_flag = OK;
 	symbol *line, *smbl;
 	int num_of_args, inst_code, dir_code;
 	char *line_number;
@@ -405,6 +405,7 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 
 				cnst = strtoint(smbl->token);
 				cnst = is_negative == 1 ? cnst*(-1) : cnst;
+				is_negative = 0;
 
 				fprintf(outfp, "%d ", cnst);
 				if(smbl->next == NULL)
@@ -413,16 +414,15 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 		}
 
 	}
-	if(error_flag == ERRO)
-		printf("Programa foi montado com erros.\n");
-	fclose(outfp);
+	
+	return error_flag;
 }
 
-table *first_pass(FILE *fp){
+table *first_pass(FILE *fp, int *is_ok){
 	table *ts = create_tb();
 	int end_count = 0;
 	symbol *line, *smbl; /*Lista de simbolos*/
-	int error_flag = 0;
+	int error_flag = OK;
 	int section = NONE;
 	int num_of_args, inst_code, dir_code, has_stop = ERRO, has_label = NO, just_label = NO;
 	int space_size;
@@ -696,9 +696,7 @@ table *first_pass(FILE *fp){
 		printf("Linha %s - Erro Semantico: programa sem instrucao stop\n", line_number);
 	}
 
-
-	/*if(error_flag == ERRO)
-		return NULL;*/
+	*is_ok = error_flag;
 
 	return ts;
 }
@@ -793,4 +791,28 @@ int is_argument(symbol **line){
 		return OK;
 	}
 	return ERRO;
+}
+
+int TwoPassAssembler(char *inFileName, char *outFileName){
+	FILE *infp = fopen(inFileName, "r"), *outfp = fopen(outFileName, "w");
+	table *tb;
+	int firstPass_error, sndPass_error;
+
+	if(infp == NULL || outfp == NULL){
+		printf("Erro na abertura dos arquivos\n");
+		return ERRO;
+	} 
+
+	tb = first_pass(infp, &firstPass_error);
+	sndPass_error = second_pass(infp, tb, outfp);
+
+	if(sndPass_error == ERRO || firstPass_error == ERRO){
+		printf("Ocorreram erros na montagem\n");
+		return ERRO;
+	}
+
+	fclose(infp);
+	fclose(outfp);
+
+	return OK;
 }

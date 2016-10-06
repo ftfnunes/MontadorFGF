@@ -110,8 +110,10 @@ int identify_dir(char *token);
 
 int is_argument(symbol **line);
 
-table *first_pass(FILE *fp);
+table *first_pass(FILE *fp, int *is_ok);
 
 int strtoint(char *nstr);
 
 int second_pass(FILE *infp, table *ts, FILE *outfp);
+
+int TwoPassAssembler(char *inFileName, char *outFileName);
