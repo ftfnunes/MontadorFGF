@@ -287,6 +287,11 @@ Linha *leArquivo(char *nomeArquivo){
 		contaLinhas++;
 	}
 
+	/*caso a ultima linha seja uma quebra de linha ou apenas espacos*/
+	if(verificaEspacosouNewline(arquivoEntrada[contaLinhas].linhaArquivo) == 1){
+		arquivoEntrada[contaLinhas - 1].IFvalido = 0; 
+		arquivoEntrada[contaLinhas].IFvalido = 0;
+	}  
 	numero_de_linhas = contaLinhas; /*variavel global numero de linhas recebe o valor do numero de linhas*/
 	fclose(fp); /*fecha o arquivo*/
 
@@ -334,7 +339,7 @@ char *geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 		if(arquivoEntrada[i].IFvalido == 1 || arquivoEntrada[i].IFvalido == 2){
 			/*insere no arquivo final a linha correspondente ao arquivo original e a string equivalente a linha do arquivoteste*/
 			fprintf(fp, "%d %s", arquivoEntrada[i].linhaAtual, arquivoEntrada[i].linhaArquivo);
-		} 
+		}
 	}
 
 	liberaStructArquivo(arquivoEntrada);
