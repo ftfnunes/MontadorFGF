@@ -114,6 +114,60 @@ void labelsEQU_Repetidas(Linha linhaCodigo){
 
 }
 
+/*Funcao que substitui todas as labels da diretiva EQU pelo seu respectivo valor, sempre quando a label EQU eh usada*/
+Linha substituiLabelsporValor(Linha linhaCodigo){
+
+	char *ptr = NULL, *ptr2 = NULL; 
+	int tamanhoValorLabel = 0, i = 0; /*tamanho label recebe o tamanho da string que contem o valor da label da diretiva EQU*/
+
+	tamanhoValorLabel = strlen(linhaCodigo.valorEQU) + 1; /*recebe o + 1, para caso o tamanho do valor seja 1*/
+	for(i = 0; i < numero_de_linhas; i++){
+		ptr = strstr(arquivoEntrada[i].linhaArquivo, linhaCodigo.label_EQU);
+		ptr2 = strstr(arquivoEntrada[i].linhaArquivo, "EQU");
+		if(ptr != NULL && ptr2 == NULL && arquivoEntrada[i].possuiIF != 1){
+			strncpy(ptr, linhaCodigo.valorEQU, tamanhoValorLabel);
+			strcat(arquivoEntrada[i].linhaArquivo, "\n"); /*concatena a quebra de linha, porque ao inserir o valor da diretiva EQU
+														    quando ela eh chamada, o \n eh perdido*/
+		}
+		ptr = NULL;
+		ptr2 = NULL;
+	}
+
+	return linhaCodigo;
+}
+
+/*Funca0 que apontara erro caso o valor atribuido a diretiva EQU tenha algum caracter nao numerico*/
+void verificaSeValorEQUValido(Linha linhaCodigo){
+	int contador = 0, tamanhoString = strlen(linhaCodigo.valorEQU), i = 0;
+
+	for(i = 0; i < tamanhoString; i++){
+		/*se nao for numerico, incrementa o contador*/
+		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0){
+			contador++;
+		}
+	}
+	/*se o contador for maior que 0, isso quer dizer que ha caracteres nao numericos no valor da diretiva EQU*/
+	if(contador > 0){
+		printf("Linha %d: Erro lexico! Valor da label EQU possui um caracter nao numerico\n", linhaCodigo.linhaAtual);
+	}
+}
+
+/*Funcao que apontara erro caso tenha mais de uma declaracao de labels(ou seja, mais de um caracter :), para as diretivas IF e EQU*/
+void verificaSeTemMuitasLabelsLinha(Linha linhaCodigo){
+	int i = 0, tamanhoString = strlen(linhaCodigo.linhaArquivo), contador = 0;
+
+	for(i = 0; i < tamanhoString; i++){
+		/*se o caracter for o :, incrementa o contador*/
+		if(linhaCodigo.linhaArquivo[i] == ':'){
+			contador++;
+		}
+	}
+	/*se o contador for maior que 1, isso quer dizer que tem mais de uma label na linha*/
+	if(contador > 1){
+		printf("Linha %d: Erro sintatico! Mais de uma label declarada na linha!\n", linhaCodigo.linhaAtual);
+	}
+}
+
 /*Funcao que verifica se a label do EQU eh ou nao valida e insere o valor dela na variavel correspondente na struct */
 /*Recebe a struct(linha) que esta sendo verificada */
 Linha validaEQU(Linha linhaCodigo){
@@ -143,6 +197,8 @@ Linha validaEQU(Linha linhaCodigo){
 	/*parte de indicar os erros*/
 	labelsEQU_Repetidas(linhaCodigo); /*verifica se tem erros relacionados a repeticao de labels*/
 	apontaErroLexicoLabelEQU(linhaCodigo); /*verifica se tem erros relacionados ao nome da label*/
+	verificaSeValorEQUValido(linhaCodigo); /*verifica se tem erros relacionados a caracteres nao numericos no valor atribuido ao EQU*/
+	verificaSeTemMuitasLabelsLinha(linhaCodigo); /*verifica se tem mais de uma label declarada na linha*/
 
 	return linhaCodigo;
 }
@@ -233,6 +289,7 @@ Linha validaIF(Linha linhaCodigo){
 	linhaCodigo.IFvalido = 0; /*zera a flag de IFvalido da linha que esta sendo lida, considerando que eh um IF, e assumindo que a linha seguinte
 							   tenha sido validada, caso o IF  seja valido */
 	indicaErroNaoExisteLabelIF(linhaCodigo); /*indica se tem ou nao, erro semantico, em relacao a labels nao declaradas na diretiva IF*/
+	verificaSeTemMuitasLabelsLinha(linhaCodigo); /*verifica se tem mais de uma label declarada na linha*/
 
 	return linhaCodigo;
 
@@ -331,6 +388,13 @@ char *geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 		}
 		if(arquivoEntrada[i].possuiIF == 1){	
 		 arquivoEntrada[i] = validaIF(arquivoEntrada[i]);
+		}
+	}
+
+	/*parte que substitui o valor da label EQU toda vez que for chamada*/
+	for(i = 0; i < numero_de_linhas; i++){
+		if(arquivoEntrada[i].possuiEQU == 1){
+			arquivoEntrada[i] = substituiLabelsporValor(arquivoEntrada[i]);
 		}
 	}
 
