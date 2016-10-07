@@ -13,6 +13,7 @@ symbol *get_token(FILE *fp){
 		return NULL;
 	}
 
+
 	switch(identify_char(c_temp)){
 		case CHARACTER:
 			buffer[0] = c_temp;
@@ -126,8 +127,8 @@ int read_number_token(char *buffer, FILE* fp){
 		return OK;
 	}
 	else if(c_type == INVALID){
-		buffer[i] = c_temp;
-		buffer[i+1] = '\0';
+		buffer[1] = c_temp;
+		buffer[2] = '\0';
 		return INVALID;
 	}
 	buffer[1] = c_temp;
@@ -191,7 +192,6 @@ table *create_tb(){
 
 /*Cria uma lista de tokens presentes numa linha*/
 symbol *get_line(FILE *fp){
-	int t_type;
 	symbol *first = NULL, *last = NULL;
 
 	first = last = get_token(fp);
@@ -210,11 +210,15 @@ symbol *get_line(FILE *fp){
 	return first;
 }
 
-int insert_symbol(table *tb, char *token, int value){
+int insert_symbol(table *tb, char *token, int value, int section){
 	t_line *newLine = (t_line *)malloc(sizeof(t_line));
 
 	newLine->token = token;
 	newLine->value = value;
+	newLine->section = section;
+	newLine->is_const = NO;
+	newLine->is_const0 = NO;
+	newLine->space_size = 1;
 	newLine->next = NULL;
 
 	if(tb->first == NULL){
@@ -244,10 +248,10 @@ t_line *find_symbol(table *tb, char *symbol){
 	return NULL;
 }
 
-int eval_arg(symbol **smbl, table *ts, char *line_number){
-	symbol *aux = *smbl, *aux2;
+int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_snd_arg){
+	symbol *aux = *smbl;
 	t_line *sym;
-	long int number = 0;
+	long int number = 0, offset;
 
 	sym = find_symbol(ts, aux->token);
 
@@ -255,14 +259,32 @@ int eval_arg(symbol **smbl, table *ts, char *line_number){
 		printf("Linha %s - Erro Semantico: simbolo %s indefinido\n", line_number, aux->token);
 		return ERRO;
 	}
+	else if(sym->section != TEXT && inst_code >= 5 && inst_code <= 8){
+		printf("Linha %s - Erro Semantico: simbolo %s nao faz referencia a secao TEXT\n", line_number, aux->token);
+		return ERRO;
+	}
+	else if(sym->section != DATA && (inst_code < 5 ||inst_code > 8)){
+		printf("Linha %s - Erro Semantico: simbolo %s nao faz referencia a secao DATA\n", line_number, aux->token);
+		return ERRO;
+	}
+	else if(inst_code == DIV && sym->is_const0 == YES){
+		printf("Linha %s - Erro Semantico: %s eh constante 0\n", line_number, aux->token);
+		return ERRO;
+	}
+	else if(((inst_code == STORE || inst_code == INPUT) && sym->is_const == YES) || (is_snd_arg == YES && sym->is_const == YES)){
+		printf("Linha %s - Erro Semantico: Tentativa de alteracao de constante\n", line_number);
+		return ERRO;
+	}
 	number = sym->value;
 	aux = aux->next;
-
-	
-
 	if(aux != NULL && aux->type == OPERATOR){
 		aux = aux->next;
-		number += strtoint(aux->token);
+		offset = strtoint(aux->token);
+		if(offset >= sym->space_size){
+			printf("Linha %s - Erro Semantico: Acesso a espaco de memoria nao reservado\n", line_number);
+			return ERRO;
+		}
+		number += offset;
 	}
 	*(smbl) = aux;
 	return number;
@@ -270,7 +292,6 @@ int eval_arg(symbol **smbl, table *ts, char *line_number){
 
 int strtoint(char *nstr){
 	int num = 0, count = 1, i;
-	char **ptr;
 
 	if(nstr[0] == '0' && nstr[1] == 'X'){
 		for(i = 2; nstr[i] != '\0'; i++){
@@ -286,8 +307,7 @@ int strtoint(char *nstr){
 }
 
 int second_pass(FILE *infp, table *ts, FILE *outfp){
-	int add_count = 0;
-	int error_flag = 0;
+	int error_flag = OK;
 	symbol *line, *smbl;
 	int num_of_args, inst_code, dir_code;
 	char *line_number;
@@ -319,38 +339,37 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 		if(smbl->type == INST){
 			inst_code = identify_inst(smbl->token);
 			num_of_args = number_of_addresses(inst_code) - 1;
+			smbl = smbl->next;
+			/*Recupera argumentos de acordo com a quantidade*/
 			if(num_of_args == 1){
-				smbl = smbl->next;
-				arg1 = eval_arg(&smbl, ts, line_number);
+				arg1 = eval_arg(&smbl, ts, line_number, inst_code, NO);
 				if(arg1 == ERRO){
-					fclose(outfp);
-					return ERRO;
+					error_flag = ERRO;
+					continue;
 				}
 				fprintf(outfp, "%d %d ", inst_code, arg1);
 				if(smbl == NULL)
 					break;
 			}
 			else if(num_of_args == 2){
-				smbl = smbl->next;
-				arg1 = eval_arg(&smbl, ts, line_number);
+				arg1 = eval_arg(&smbl, ts, line_number, inst_code, NO);
 				if(arg1 == ERRO){
-					fclose(outfp);
-					return ERRO;
+					error_flag = ERRO;
+					continue;
 				}
 				smbl = smbl->next;
-				arg2 = eval_arg(&smbl, ts, line_number);
+				arg2 = eval_arg(&smbl, ts, line_number, inst_code, YES);
 				if(arg2 == ERRO){
-					fclose(outfp);
-					return ERRO;
+					error_flag = ERRO;
+					continue;
 				}
-
 				fprintf(outfp, "%d %d %d ", inst_code, arg1, arg2);
 				if(smbl == NULL)
 					break;
 			}
 			else{
 				fprintf(outfp, "%d ", inst_code);
-				if(smbl->next == NULL)
+				if(smbl == NULL)
 					break;
 			}
 		}
@@ -383,6 +402,7 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 
 				cnst = strtoint(smbl->token);
 				cnst = is_negative == 1 ? cnst*(-1) : cnst;
+				is_negative = 0;
 
 				fprintf(outfp, "%d ", cnst);
 				if(smbl->next == NULL)
@@ -391,19 +411,26 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 		}
 
 	}
-	fclose(outfp);
+	
+	return error_flag;
 }
 
-table *first_pass(FILE *fp){
+table *first_pass(FILE *fp, int *is_ok){
 	table *ts = create_tb();
 	int end_count = 0;
 	symbol *line, *smbl; /*Lista de simbolos*/
-	int error_flag = 0;
+	int error_flag = OK;
 	int section = NONE;
-	int num_of_args, inst_code, dir_code, has_stop = ERRO;
+	int num_of_args, inst_code, dir_code, has_stop = ERRO, has_label = NO, just_label = NO;
+	int space_size;
 	char *line_number;
 
 	while((line = get_line(fp)) != NULL){
+		if(just_label == NO)
+			has_stop = NO;
+		else
+			just_label = NO;
+
 		smbl = line;
 		if(smbl->type != NUMBER){
 			printf("Erro no formato do arquivo\n");
@@ -469,19 +496,27 @@ table *first_pass(FILE *fp){
 			}
 			else{
 				if(find_symbol(ts, smbl->token) != NULL){
-					printf("Linha %s - Erro Semantico: redefinicao de simbolo %s", line_number, smbl->token);
+					printf("Linha %s - Erro Semantico: redefinicao de simbolo %s\n", line_number, smbl->token);
 					error_flag = ERRO;
 					continue;
 				}
-				insert_symbol(ts, smbl->token, end_count);
+				if(has_label == YES){
+					printf("Linha %s - Erro Semantico: Dois rotulos com mesmo endereco\n", line_number);
+					error_flag = ERRO;
+					continue;
+				}
+				insert_symbol(ts, smbl->token, end_count, section);
 				smbl = smbl->next->next;
 				if(smbl == NULL){
 					printf("Linha %s - Erro Sintatico: linha mal formada\n", line_number);
 					error_flag = ERRO;
 					break;
 				}
-				if(smbl->type == BREAK)
+				has_label = YES;
+				if(smbl->type == BREAK){
+					just_label = YES;
 					continue;
+				}
 			}
 		}
 
@@ -581,13 +616,21 @@ table *first_pass(FILE *fp){
 				printf("Linha %s - Erro Semantico: diretiva em secao errada\n", line_number);
 				error_flag = ERRO;
 			}
+			if(has_label == NO){
+				printf("Linha %s - Erro Sintatico: diretiva nao possui rotulo\n", line_number);
+				error_flag = ERRO;
+			}
 			if(dir_code == SPACE){
 				smbl = smbl->next;
 				if(smbl == NULL){
 					break;
 				}
 				if(smbl->type == NUMBER){
-					end_count += strtoint(smbl->token);
+					space_size = strtoint(smbl->token);
+					if(ts->last != NULL){
+						ts->last->space_size = space_size;
+					}
+					end_count += space_size;
 					smbl= smbl->next;
 					if(smbl == NULL)
 						break;
@@ -602,6 +645,9 @@ table *first_pass(FILE *fp){
 				}
 			}
 			else if(dir_code == CNST){
+				if(ts->last != NULL){
+					ts->last->is_const = YES; 
+				}
 				smbl = smbl->next;
 				end_count++;
 				if(smbl == NULL){
@@ -622,6 +668,9 @@ table *first_pass(FILE *fp){
 					error_flag = ERRO;
 					continue;
 				}
+				if(ts->last != NULL){
+					ts->last->is_const0 = strtoint(smbl->token) == 0 ? YES : NO;
+				} 
 				smbl=smbl->next;
 				if(smbl == NULL)
 					break;
@@ -632,6 +681,7 @@ table *first_pass(FILE *fp){
 				}
 			}
 		}
+		has_label = NO;
 	}
 
 	if(section == NONE){
@@ -643,9 +693,7 @@ table *first_pass(FILE *fp){
 		printf("Linha %s - Erro Semantico: programa sem instrucao stop\n", line_number);
 	}
 
-
-	if(error_flag == ERRO)
-		return NULL;
+	*is_ok = error_flag;
 
 	return ts;
 }
@@ -740,4 +788,28 @@ int is_argument(symbol **line){
 		return OK;
 	}
 	return ERRO;
+}
+
+int TwoPassAssembler(char *inFileName, char *outFileName){
+	FILE *infp = fopen(inFileName, "r"), *outfp = fopen(outFileName, "w");
+	table *tb;
+	int firstPass_error, sndPass_error;
+
+	if(infp == NULL || outfp == NULL){
+		printf("Erro na abertura dos arquivos\n");
+		return ERRO;
+	} 
+
+	tb = first_pass(infp, &firstPass_error);
+	sndPass_error = second_pass(infp, tb, outfp);
+
+	if(sndPass_error == ERRO || firstPass_error == ERRO){
+		printf("Ocorreram erros na montagem\n");
+		return ERRO;
+	}
+
+	fclose(infp);
+	fclose(outfp);
+
+	return OK;
 }

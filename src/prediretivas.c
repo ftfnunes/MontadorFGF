@@ -1,23 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include "prediretivas.h"
 /*Programa que realiza o pre processamento das diretivas IF E EQU do montador do Assembly inventado*/
 /*Victor Araujo Vieira*/
-
-/*Definicao da struct que ira contar cada linha do arquivo de entrada, bem como flags para auxiliar no algoritmo*/
-typedef struct{
-	char linhaArquivo[1001]; /*string que recebe a linha do arquivo*/ /*OBS: a principio recebe uma string com o tamanho de 300, verificar se vai precisar de alocacao dinamica*/
-	int possuiIF; /*flag que indica se tem ou nao a diretiva IF na linha */
-	int possuiEQU; /*flag que indica se tem ou nao a diretiva EQU na linha*/
-	int IFvalido; /*Flag que indica se a condicao do IF foi ou nao validada. 0 caso nao seja, 1 caso seja, e 2 para o resto das linhas*/
-	char label_EQU[201] /*variavel que contem o nome da label da diretiva EQU*/;
-	char valorEQU[201]; /*variavel que contem o valor da label da diretiva EQU*/
-	int linhaAtual /*indica o numero da linha, baseado no arquivo fonte*/;
-}Linha;
-
-int numero_de_linhas; /*variavel global que guarda o numero de linhas do arquivo*/
-Linha *arquivoEntrada; /*Sera um vetor de structs do tipo Linha, aonde cada struct tera uma linha do arquivo*/
 
 /*Funcao que verifica se o char eh um inteiro ou nao*/
 /*Retorna 1 caso seja e 0 se nao for*/
@@ -25,24 +8,6 @@ int verificaseCharInteiro(char c){
 	if(c > 47 && c < 58) return 1; /*eh um inteiro*/
 
 	return 0; /*nao eh um inteiro*/
-}
-
-
-/*Funcao que transforma uma string, seja ela representando um inteiro ou um hexadecimal, em int*/
-int strtoint(char *nstr){
-	int num = 0, count = 1, i;
-
-	if(nstr[0] == '0' && nstr[1] == 'X'){
-		for(i = 2; nstr[i] != '\0'; i++){
-			if(verificaseCharInteiro(nstr[i]) == 1)
-				num = num*count + nstr[i]-'0';
-			else
-				num = num*count + nstr[i]-'A'+10;
-			count *= 16;
-		}
-		return num;
-	}
-	return atoi(nstr);
 }
 
 /*Funcao que recebe uma string e transforma todos os chars em maiusculos*/
@@ -151,7 +116,6 @@ void labelsEQU_Repetidas(Linha linhaCodigo){
 
 /*Funcao que verifica se a label do EQU eh ou nao valida e insere o valor dela na variavel correspondente na struct */
 /*Recebe a struct(linha) que esta sendo verificada */
-/*FAZER UM JEITO DE SUBSTITUIR QUALQUER CHAMADA DA LABEL DA EQU PELO VALOR DA MESMA*/
 Linha validaEQU(Linha linhaCodigo){
 
 	int i = 0, lenght = 0;
@@ -218,6 +182,26 @@ int verificaEspacosouNewline(char *string){
 	return 0; /*Por default, assumir que tem outros caracters*/
 }
 
+/*Funcao que verifica se a linha que vem depois do IF valido ou invalido eh ou nao apenas espacos e quebra de linha,
+ou apenas quebra de linha. Para os dois casos, avalia a proxima linha*/
+void validaProximaLinhaIF(Linha linhaCodigo, int valorIFvalido){
+
+	int i = 0;
+
+	/*caso IF seja valido ou invalido, parte do codigo que ira validar a proxima linha do arquivo*/
+	if(linhaCodigo.IFvalido == valorIFvalido){
+		for(i = 0; i < numero_de_linhas; i++){
+			if(arquivoEntrada[i].linhaAtual > linhaCodigo.linhaAtual){
+				/*verifica se a linha que vem depois do IF valido ou invalido, eh ou nao espaco em branco e quebra de linha, ou apenas quebra de linha*/
+				if(verificaEspacosouNewline(arquivoEntrada[i].linhaArquivo) == 0){ 
+					arquivoEntrada[i].IFvalido = valorIFvalido; /*valida tambem a linha depois do IF valido*/
+					break; /*para o loop caso ja valide a proxima linha depois do IF, para nao verificar as proximas linhas*/
+				}
+			}
+		}
+	}
+}
+
 /*Funcao que verifica se o valor da label que a diretiva IF avalia eh valido ou nao*/
 /*Se for 1 copia a proxima linha, senao, retira essa linha e a proxima*/
 /*Recebe a struct(linha) que esta sendo verificada*/
@@ -241,29 +225,10 @@ Linha validaIF(Linha linhaCodigo){
 	}
 
 	/*caso IF seja valido, parte do codigo que validara a proxima linha do arquivo*/
-	if(linhaCodigo.IFvalido == 1){
-		for(i = 0; i < numero_de_linhas; i++){
-			if(arquivoEntrada[i].linhaAtual > linhaCodigo.linhaAtual){
-				/*verifica se a linha que vem depois do IF valido, eh ou nao espaco em branco e quebra de linha, ou apenas quebra de linha*/
-				if(verificaEspacosouNewline(arquivoEntrada[i].linhaArquivo) == 0){ 
-					arquivoEntrada[i].IFvalido = 1; /*valida tambem a linha depois do IF valido*/
-					break; /*para o loop caso ja valide a proxima linha depois do IF, para nao verificar as proximas linhas*/
-				}
-			}
-		}
-	}
+	validaProximaLinhaIF(linhaCodigo, 1);
+
 	/*caso IF seja invalido, parte do codigo que invalidara a proxima linha do arquivo*/
-	if(linhaCodigo.IFvalido == 0){
-		for(i = 0; i < numero_de_linhas; i++){
-			if(arquivoEntrada[i].linhaAtual > linhaCodigo.linhaAtual){
-				/*verifica se a linha que vem depois do IF invalido, eh ou nao espaco em branco e quebra de linha, ou apenas quebra de linha*/
-				if(verificaEspacosouNewline(arquivoEntrada[i].linhaArquivo) == 0){ 
-					arquivoEntrada[i].IFvalido = 0; /*invalida tambem a linha depois do IF valido*/
-					break; /*para o loop caso ja valide a proxima linha depois do IF, para nao verificar as proximas linhas*/
-				}
-			}
-		}
-	}
+	validaProximaLinhaIF(linhaCodigo, 0);
 
 	linhaCodigo.IFvalido = 0; /*zera a flag de IFvalido da linha que esta sendo lida, considerando que eh um IF, e assumindo que a linha seguinte
 							   tenha sido validada, caso o IF  seja valido */
@@ -317,6 +282,7 @@ Linha *leArquivo(char *nomeArquivo){
 			printf("Linha %d: Erro sintatico! Diretiva EQU sem uma label\n", linha);
 		} 
 		arquivoEntrada[linha-1].IFvalido = 2; /*todas as linhas, a principio, recebem na flag IFvalido o valor 2*/
+		if(arquivoEntrada[linha-1].possuiEQU) arquivoEntrada[linha-1].IFvalido = 0; /*se possuir a diretiva EQU na linha, nao a reescreve no arquivo final*/
 		linha++;
 		contaLinhas++;
 	}
@@ -375,17 +341,4 @@ char *geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 	fclose(fp);
 
 	return arquivoFinal;
-}
-
-
-/*main*/
-int main(){
-
-	char string[100];
-
-	strcpy(string,geraArquivoFinal("arquivoteste.asm", "arquivofinal"));
-
-	printf("%s\n", string);
-
-	return 0;
 }

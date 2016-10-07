@@ -4,6 +4,8 @@
 
 #define ERRO -1
 #define OK 1
+#define YES 1
+#define NO 0
 
 #define TAM_ROT 50
 
@@ -57,6 +59,10 @@
 typedef struct T_line {
 	char *token;
 	int value;
+	int is_const;
+	int is_const0;
+	int space_size;
+	int section;
 	struct T_line *next;
 }  t_line;
 
@@ -84,7 +90,7 @@ int identify_char(char c);
 
 table *create_tb();
 
-int insert_symbol(table *tb, char *token, int value);
+int insert_symbol(table *tb, char *token, int value, int section);
 
 t_line *find_symbol(table *tb, char *symbol);
 
