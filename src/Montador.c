@@ -3,6 +3,7 @@
 #include <string.h>
 #include "DuasPassagens.h"
 #include "macros.h"
+#include "prediretivas.h"
 
 
 /*
@@ -20,27 +21,32 @@
 
 int main(int argc,  char** argv){
 
-	if(argc != 3){
+	if(argc != 4){
 		printf("Não foi fornecido o número de argumentos correto na chamada do programa.\n");
 		exit(1);
 	}
 
-	if(argv[0][1] == 'p'){
+	if(argv[1][1] == 'p'){
+		geraArquivoFinal(argv[2], argv[3]);
 		/* Chama pre-processamento.*/
 
 	}
-
-	if(argv[0][1] == 'm'){
-		/* Chama pre-processamento.*/
-		processa_macros(argv[2]);
+	else if(argv[1][1] == 'm'){
+		geraArquivoFinal(argv[2], argv[3]);
+		printf("%s\n", argv[3]);
+		processa_macros(argv[3]);
 
 	}
 
-	if(argv[0][1] == 'o'){
+	else if(argv[1][1] == 'o'){
+		geraArquivoFinal(argv[2], argv[3]);
 		/* Chama pre-processamento.*/
-		processa_macros(argv[2]);
+		processa_macros(argv[3]);
 		/* Chama algoritmo de duas passagens.*/
+		TwoPassAssembler(argv[3]);
 	}
+	else
+		printf("Formato invalido para a chamada do programa\n");
 
 
 	return 0;

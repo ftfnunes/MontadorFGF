@@ -116,4 +116,4 @@ int strtoint(char *nstr);
 
 int second_pass(FILE *infp, table *ts, FILE *outfp);
 
-int TwoPassAssembler(char *inFileName, char *outFileName);
+int TwoPassAssembler(char *fileName);

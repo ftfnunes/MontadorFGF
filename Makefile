@@ -6,10 +6,10 @@ SRC_DIR = ./src
 
 ODIR=obj
 
-_DEPS = DuasPassagens.h macros.h
+_DEPS = DuasPassagens.h macros.h prediretivas.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = DuasPassagens.o macros.o Montador.o
+_OBJ = DuasPassagens.o macros.o prediretivas.o Montador.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 

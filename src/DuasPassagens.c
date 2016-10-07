@@ -790,14 +790,23 @@ int is_argument(symbol **line){
 	return ERRO;
 }
 
-int TwoPassAssembler(char *inFileName, char *outFileName){
-	FILE *infp = fopen(inFileName, "r"), *outfp = fopen(outFileName, "w");
+int TwoPassAssembler(char *inFileName){
+	FILE *infp, *outfp;
 	table *tb;
 	int firstPass_error, sndPass_error;
+	char outputName[200];
+	char inputName[200];
+
+
+	sprintf(outputName, "%s.o", inFileName);
+	sprintf(inputName, "%s.mcr", inFileName);
+
+	outfp = fopen(outputName, "w");
+	infp = fopen(inputName, "r");
 
 	if(infp == NULL || outfp == NULL){
 		printf("Erro na abertura dos arquivos\n");
-		return ERRO;
+		exit(1);
 	} 
 
 	tb = first_pass(infp, &firstPass_error);
@@ -805,7 +814,7 @@ int TwoPassAssembler(char *inFileName, char *outFileName){
 
 	if(sndPass_error == ERRO || firstPass_error == ERRO){
 		printf("Ocorreram erros na montagem\n");
-		return ERRO;
+		exit(1);
 	}
 
 	fclose(infp);
