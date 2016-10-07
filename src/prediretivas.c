@@ -264,7 +264,7 @@ Linha *leArquivo(char *nomeArquivo){
 			exit(1);
 		}
 
-		fgets(temp, 501, fp);
+		fgets(temp, 1001, fp);
 		deixaMaiusculo(temp);
 		strcpy(arquivoEntrada[linha-1].linhaArquivo, temp); /*copia a linha do arquivo para a variavel que recebe a linha da struct*/
 		arquivoEntrada[linha-1].linhaAtual = linha; /*indica a inha do arquivo original*/
@@ -288,10 +288,11 @@ Linha *leArquivo(char *nomeArquivo){
 	}
 
 	/*caso a ultima linha seja uma quebra de linha ou apenas espacos*/
-	if(verificaEspacosouNewline(arquivoEntrada[contaLinhas].linhaArquivo) == 1){
-		arquivoEntrada[contaLinhas - 1].IFvalido = 0; 
-		arquivoEntrada[contaLinhas].IFvalido = 0;
-	}  
+	if(strcmp(arquivoEntrada[contaLinhas-1].linhaArquivo, arquivoEntrada[contaLinhas-2].linhaArquivo) == 0){ 
+			arquivoEntrada[contaLinhas-1].IFvalido = 0;
+	}else{
+		arquivoEntrada[contaLinhas-1].IFvalido = 2;
+	}
 	numero_de_linhas = contaLinhas; /*variavel global numero de linhas recebe o valor do numero de linhas*/
 	fclose(fp); /*fecha o arquivo*/
 
