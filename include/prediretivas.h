@@ -18,6 +18,7 @@ Linha *arquivoEntrada; /*Sera um vetor de structs do tipo Linha, aonde cada stru
 
 /*Assinaturas das funcoes*/
 int verificaseCharInteiro(char c);
+int stringToInt(char *nstr);
 void deixaMaiusculo(char *string);
 int apontaErroLexicoLabelEQU(Linha linhaCodigo);
 int verificaLabels_eEQU(char *string);
@@ -29,7 +30,7 @@ Linha substituiLabelsporValor(Linha linhaCodigo);
 int verificaSeValorEQUValido(Linha linhaCodigo);
 int verificaSeTemMuitasLabelsLinha(Linha linhaCodigo);
 Linha validaEQU(Linha linhaCodigo);
-int indicaErroNaoExisteLabelIF(Linha linhaCodigo);
+void indicaErroNaoExisteLabelIF(Linha linhaCodigo);
 int verificaEspacosouNewline(char *string);
 void validaProximaLinhaIF(Linha linhaCodigo);
 Linha validaIF(Linha linhaCodigo);
