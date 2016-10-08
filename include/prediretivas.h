@@ -31,7 +31,7 @@ void verificaSeTemMuitasLabelsLinha(Linha linhaCodigo);
 Linha validaEQU(Linha linhaCodigo);
 void indicaErroNaoExisteLabelIF(Linha linhaCodigo);
 int verificaEspacosouNewline(char *string);
-void validaProximaLinhaIF(Linha linhaCodigo, int valorIFvalido);
+void validaProximaLinhaIF(Linha linhaCodigo);
 Linha validaIF(Linha linhaCodigo);
 Linha *leArquivo(char *nomeArquivo);
 void liberaStructArquivo(Linha *arquivo);
