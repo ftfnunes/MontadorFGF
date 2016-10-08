@@ -86,7 +86,7 @@ void busca_macros(FILE *fp, FILE *final){
 				if(buffers[i+1][strlen(buffers[i+1])-1] == ',')
 					buffers[i+1][strlen(buffers[i+1])-1] = '\0';
 			}
-			expande_macros(final, &lista, buffers[0], &(buffers[1]), numArgs, linha);
+			expande_macros(final, &lista, buffers[0], &(buffers[1]), numArgs, linha, NULL);
 		}
 		if(isMacro(buffers[1], &lista) == 0){
 			/* Tem que passar a label e os argumentos. */
@@ -96,7 +96,9 @@ void busca_macros(FILE *fp, FILE *final){
 				if(buffers[i+2][strlen(buffers[i+2])-1] == ',')
 					buffers[i+2][strlen(buffers[i+2])-1] = '\0';
 			}
-			expande_macros(final, &lista, buffers[1], &(buffers[2]), numArgs, linha);
+
+
+			expande_macros(final, &lista, buffers[1], &(buffers[2]), numArgs, linha, buffers[0]);
 		}
 
 		if(isLabel(buffers[0]) == 0 && strcmp(buffers[1], "MACRO") == 0){
@@ -259,7 +261,7 @@ void copia_macro(lMacro **lista, char *label, char **args, int numArgs){
 
 }
 
-void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha){
+void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha, char *labelLinha){
 	lMacro *aux;
 	char buffer[300];
 	int i, j;
@@ -280,6 +282,11 @@ void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int n
 	}
 
 	fprintf(final, "%d", linha);
+
+	if(labelLinha != NULL){
+		fprintf(final " %s", labelLinha);
+	}
+
 	for(i = 0; i < aux->numDef; ++i){
 		if(strcmp(aux->def[i], "\n") == 0 && i == (aux->numDef -1)){
 			fprintf(final, "\n");
@@ -317,6 +324,7 @@ lMacro *createLMacro(){
 	new->prox = NULL;
 	new->def = NULL;
 	new->args = NULL;
+	new->labelLinha = NULL;
 	new->linha = -1;
 	new->numDef = 0;
 	new->numArgs = 0;

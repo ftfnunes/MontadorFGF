@@ -3,7 +3,7 @@
 #include <string.h>
 
 typedef struct listaMacros{
-	char *label, **def, **args;
+	char *label, **def, **args, *labelLinha;
 	int linha, numDef, numArgs;
 	struct listaMacros *prox;
 } lMacro;
@@ -24,7 +24,7 @@ int liberaLMacro();
 void temMacroIgual(lMacro *new, lMacro **lista, int linha);
 int isMacro(char *lb, lMacro **macros);
 void copia_macro(lMacro **lista, char *label, char **args, int numArgs);
-void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha);
+void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int numArgs, int linha, char *labelLinha);
 
 int isNumber(char *str);
 int isLabel(char *str);
