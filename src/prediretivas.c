@@ -139,15 +139,25 @@ Linha substituiLabelsporValor(Linha linhaCodigo){
 /*Funca0 que apontara erro caso o valor atribuido a diretiva EQU tenha algum caracter nao numerico*/
 void verificaSeValorEQUValido(Linha linhaCodigo){
 	int contador = 0, tamanhoString = strlen(linhaCodigo.valorEQU), i = 0;
+	int flagHexadecimal = 0, contador1 = 0;
+
+	/*Se a flag hexa for 1, quer dizer que o numero eh um hexadecimal*/
+	if(linhaCodigo.valorEQU[0] == '0' && linhaCodigo.valorEQU[1] == 'X'){
+		flagHexadecimal = 1;
+	}
 
 	for(i = 0; i < tamanhoString; i++){
 		/*se nao for numerico, incrementa o contador*/
-		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0){
+		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimal == 0){
 			contador++;
+		}
+
+		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimal == 1 && i > 1){
+			contador1++;
 		}
 	}
 	/*se o contador for maior que 0, isso quer dizer que ha caracteres nao numericos no valor da diretiva EQU*/
-	if(contador > 0){
+	if(contador > 0 || contador1 > 0){
 		printf("Linha %d: Erro lexico! Valor da label EQU possui um caracter nao numerico\n", linhaCodigo.linhaAtual);
 	}
 }
@@ -181,6 +191,7 @@ Linha validaEQU(Linha linhaCodigo){
 	for(i = 0; linhaCodigo.linhaArquivo[i] != ':'; i++){
 		auxiliar[i] = linhaCodigo.linhaArquivo[i];
 		lenght++;
+		
 	}
 	auxiliar[lenght] = '\0';
 	strcpy(linhaCodigo.label_EQU, auxiliar); /*recebe a label*/
@@ -240,17 +251,27 @@ int verificaEspacosouNewline(char *string){
 
 /*Funcao que verifica se a linha que vem depois do IF valido ou invalido eh ou nao apenas espacos e quebra de linha,
 ou apenas quebra de linha. Para os dois casos, avalia a proxima linha*/
-void validaProximaLinhaIF(Linha linhaCodigo, int valorIFvalido){
+void validaProximaLinhaIF(Linha linhaCodigo){
 
 	int i = 0;
 
 	/*caso IF seja valido ou invalido, parte do codigo que ira validar a proxima linha do arquivo*/
-	if(linhaCodigo.IFvalido == valorIFvalido){
+	if(linhaCodigo.IFvalido == 1){
 		for(i = 0; i < numero_de_linhas; i++){
 			if(arquivoEntrada[i].linhaAtual > linhaCodigo.linhaAtual){
 				/*verifica se a linha que vem depois do IF valido ou invalido, eh ou nao espaco em branco e quebra de linha, ou apenas quebra de linha*/
 				if(verificaEspacosouNewline(arquivoEntrada[i].linhaArquivo) == 0){ 
-					arquivoEntrada[i].IFvalido = valorIFvalido; /*valida tambem a linha depois do IF valido*/
+					arquivoEntrada[i].IFvalido = linhaCodigo.IFvalido; /*valida tambem a linha depois do IF valido*/
+					break; /*para o loop caso ja valide a proxima linha depois do IF, para nao verificar as proximas linhas*/
+				}
+			}
+		}
+	}else{
+		for(i = 0; i < numero_de_linhas; i++){
+			if(arquivoEntrada[i].linhaAtual > linhaCodigo.linhaAtual){
+				/*verifica se a linha que vem depois do IF valido ou invalido, eh ou nao espaco em branco e quebra de linha, ou apenas quebra de linha*/
+				if(verificaEspacosouNewline(arquivoEntrada[i].linhaArquivo) == 0){ 
+					arquivoEntrada[i].IFvalido = linhaCodigo.IFvalido; /*valida tambem a linha depois do IF valido*/
 					break; /*para o loop caso ja valide a proxima linha depois do IF, para nao verificar as proximas linhas*/
 				}
 			}
@@ -281,13 +302,11 @@ Linha validaIF(Linha linhaCodigo){
 	}
 
 	/*caso IF seja valido, parte do codigo que validara a proxima linha do arquivo*/
-	validaProximaLinhaIF(linhaCodigo, 1);
+	validaProximaLinhaIF(linhaCodigo);
 
-	/*caso IF seja invalido, parte do codigo que invalidara a proxima linha do arquivo*/
-	validaProximaLinhaIF(linhaCodigo, 0);
-
-	linhaCodigo.IFvalido = 0; /*zera a flag de IFvalido da linha que esta sendo lida, considerando que eh um IF, e assumindo que a linha seguinte
+	linhaCodigo.IFvalido = 0;/*zera a flag de IFvalido da linha que esta sendo lida, considerando que eh um IF, e assumindo que a linha seguinte
 							   tenha sido validada, caso o IF  seja valido */
+	
 	indicaErroNaoExisteLabelIF(linhaCodigo); /*indica se tem ou nao, erro semantico, em relacao a labels nao declaradas na diretiva IF*/
 	verificaSeTemMuitasLabelsLinha(linhaCodigo); /*verifica se tem mais de uma label declarada na linha*/
 
