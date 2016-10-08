@@ -10,6 +10,23 @@ int verificaseCharInteiro(char c){
 	return 0; /*nao eh um inteiro*/
 }
 
+/*Funcao que converte de string para inteiro(pode ser tanto decimal quanto hexadecimal)*/
+int stringToInt(char *nstr){
+	int num = 0, count = 1, i;
+
+	if(nstr[0] == '0' && nstr[1] == 'X'){
+		for(i = 2; nstr[i] != '\0'; i++){
+			if(verificaseCharInteiro(nstr[i]) == 1)
+				num = num*count + nstr[i]-'0';
+			else
+				num = num*count + nstr[i]-'A'+10;
+			count *= 16;
+		}
+		return num;
+	}
+	return atoi(nstr);
+}
+
 /*Funcao que recebe uma string e transforma todos os chars em maiusculos*/
 void deixaMaiusculo(char *string){
 	int lenghtString = strlen(string);
@@ -42,13 +59,12 @@ int apontaErroLexicoLabelEQU(Linha linhaCodigo){
 
 /*Funcao que verifica se tem a diretiva EQU na linha e ja indica, se tem ou nao label*/
 /*Se tiver a diretiva com label, retorna 1, se tiver apenas EQU retorna 2(Erro sintatico), se nao tiver, retorna 0*/
-int verificaLabels_eEQU(char *string){
+int verificaLabels_eEQU(char *string){	
 	char *ptr = NULL, *ptr2 = NULL;
 	ptr = strpbrk(string, ":"); /*o ponteiro recebera o local que aparece a primeira ocorrencia do char :*/
-	ptr2 = strstr(string, "EQU");/*o ponteiro recebera o local que aprece a primeira ocorrencia da string "EQU"*/
-
-	if(ptr != NULL && ptr2 != NULL) return 1; /*Possui uma label na linha e a diretiva EQU*/
-	if(ptr == NULL && ptr2 != NULL) return 2; /*Possui apenas a diretiva EQU na linha, sem label, que eh um erro sintatico*/
+	ptr2 = strstr(string, "EQU");/*o ponteiro recebera o local que aparece a primeira ocorrencia da string "EQU"*/
+	if(ptr != NULL && ptr2 != NULL && (*(ptr2+3) == ' ')) return 1; /*Possui uma label na linha e a diretiva EQU*/
+	if(ptr == NULL && ptr2 != NULL && (*(ptr2+3) == ' ')) return 2; /*Possui apenas a diretiva EQU na linha, sem label, que eh um erro sintatico*/
 
 	return 0; /*Por default, assumir que nao tem a diretiva EQU e nem uma label*/
 }
@@ -231,7 +247,7 @@ Linha validaEQU(Linha linhaCodigo){
 
 /*Funcao que verifica se tem ou nao label com a diretiva EQU que esta sendo chamada na diretiva IF*/
 /*Se nao tiver, indica erro semantico*/
-int indicaErroNaoExisteLabelIF(Linha linhaCodigo){
+void indicaErroNaoExisteLabelIF(Linha linhaCodigo){
 
 	int i = 0 ; 
 	char auxiliar[201], contador = 0; /*contador ira incrementar caso tenha a label usada no IF no arquivo*/
@@ -247,10 +263,8 @@ int indicaErroNaoExisteLabelIF(Linha linhaCodigo){
 
 	if(contador == 0){
 		printf("Linha %d: Erro semantico! Nao existe a label usada na diretiva IF\n", linhaCodigo.linhaAtual);
-		return 1; /*Retorna erro*/
 	} 
 
-	return 0; /*Por default assumir que existe a label da diretiva EQU na hora de avaliar o IF*/
 }
 
 /*Funcao que verifica se na string tem apenas espacos ou \n*/
@@ -304,17 +318,18 @@ void validaProximaLinhaIF(Linha linhaCodigo){
 /*Recebe a struct(linha) que esta sendo verificada*/
 Linha validaIF(Linha linhaCodigo){
 	/*caso tenha uma label que nao existe, apontar erro semantico!*/
-	int i = 0, x = 0;
+	int i = 0, valorEQUInteiro = 0;
 	char auxiliar[201];
 
 	sscanf(linhaCodigo.linhaArquivo, "%*s %s", auxiliar);/*auxiliar recebe o nome da label que IF esta verificando*/
 	for(i = 0; i < numero_de_linhas; i++){
 		if(arquivoEntrada[i].possuiEQU == 1){
+			valorEQUInteiro = stringToInt(arquivoEntrada[i].valorEQU);
 			if((strcmp(auxiliar, arquivoEntrada[i].label_EQU) == 0)){
-				if(strcmp(arquivoEntrada[i].valorEQU, "1") == 0){
+				if(valorEQUInteiro == 1){
 					linhaCodigo.IFvalido = 1; /*Label do EQU vale 1, logo, eh valida */
 				}
-				if(strcmp(arquivoEntrada[i].valorEQU, "1") != 0){
+				if(valorEQUInteiro != 1){
 					linhaCodigo.IFvalido = 0; /*Label do EQU vale 0 ou outro valor, logo, eh invalida*/
 				}
 			}
@@ -324,16 +339,14 @@ Linha validaIF(Linha linhaCodigo){
 	/*caso IF seja valido, parte do codigo que validara a proxima linha do arquivo*/
 	validaProximaLinhaIF(linhaCodigo);
 	
-	x = indicaErroNaoExisteLabelIF(linhaCodigo); /*indica se tem ou nao, erro semantico, em relacao a labels nao declaradas na diretiva IF*/
+	indicaErroNaoExisteLabelIF(linhaCodigo); /*indica se tem ou nao, erro semantico, em relacao a labels nao declaradas na diretiva IF*/
 	verificaSeTemMuitasLabelsLinha(linhaCodigo); /*verifica se tem mais de uma label declarada na linha*/
 
 	/*Se tiver erro de label que nao existe, o arquivo final deve conter a linha com a diretiva IF sem label*/
-	if(x == 1){
-		linhaCodigo.IFvalido = 1;
-	}else{
-		linhaCodigo.IFvalido = 0; /*zera a flag de IFvalido da linha que esta sendo lida, considerando que eh um IF, e assumindo que a linha seguinte
+
+	linhaCodigo.IFvalido = 0; /*zera a flag de IFvalido da linha que esta sendo lida, considerando que eh um IF, e assumindo que a linha seguinte
 							   tenha sido validada, caso o IF  seja valido */
-	}
+	
 
 
 	return linhaCodigo;
