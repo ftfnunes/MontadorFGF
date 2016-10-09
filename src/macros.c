@@ -284,7 +284,7 @@ void expande_macros(FILE *final, lMacro **lista, char *label, char **args, int n
 	fprintf(final, "%d", linha);
 
 	if(labelLinha != NULL){
-		fprintf(final " %s", labelLinha);
+		fprintf(final, " %s", labelLinha);
 	}
 
 	for(i = 0; i < aux->numDef; ++i){
