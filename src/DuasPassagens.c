@@ -3,7 +3,7 @@
 symbol *get_token(FILE *fp){
 	char *buffer = (char *)malloc(TAM_ROT*sizeof(char)), c_temp;
 	int is_ok;
-	symbol *newSymbol = (symbol *)malloc(sizeof(symbol));
+	symbol *newSymbol = (symbol *)malloc(sizeof(symbol)), *newSymbol2 = (symbol *)malloc(sizeof(symbol));
 
 	if(!fp)
 		return NULL;
@@ -43,7 +43,13 @@ symbol *get_token(FILE *fp){
 			buffer[1] = '\0';
 			newSymbol->token = buffer;
 			newSymbol->type = COMMA;
-			break;
+			newSymbol2->type = identify_char(c_temp = fgetc(fp));
+			newSymbol2->token = (char *)malloc(TAM_ROT*sizeof(char));
+			newSymbol2->token[0] = c_temp;
+			newSymbol2->token[1] = '\0'; 
+			newSymbol->next = newSymbol2;
+			newSymbol2->next = NULL;
+			return newSymbol;
 		case COLON:
 			buffer[0] = c_temp;
 			buffer[1] = '\0';
@@ -199,9 +205,12 @@ symbol *get_line(FILE *fp){
 		return NULL;
 	if(first->type == BREAK)
 		return first;
-
+	if(last->type == COMMA)
+		last = last->next;
 	while((last->next = get_token(fp)) != NULL && last->next->type != BREAK){
 		last = last->next;
+		if(last->type == COMMA)
+			last = last->next;
 		last->next = NULL;
 	}
 	if(last->next != NULL)
@@ -357,7 +366,7 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 					error_flag = ERRO;
 					continue;
 				}
-				smbl = smbl->next;
+				smbl = smbl->next->next;
 				arg2 = eval_arg(&smbl, ts, line_number, inst_code, YES);
 				if(arg2 == ERRO){
 					error_flag = ERRO;
@@ -575,6 +584,17 @@ table *first_pass(FILE *fp, int *is_ok){
 				}
 				if(smbl->type != COMMA){
 					printf("Linha %s - Erro Sintatico: faltando virgula\n", line_number);
+					error_flag = ERRO;
+					continue;
+				}
+				smbl = smbl->next;
+				if(smbl == NULL){
+					printf("Linha %s - Erro Sintatico: instrucao mal formada\n", line_number);
+					error_flag = ERRO;
+					break;
+				}
+				if(smbl->type != BLANK){
+					printf("Linha %s - Erro Sintatico: esperava espaco\n", line_number);
 					error_flag = ERRO;
 					continue;
 				}
