@@ -9,12 +9,14 @@
 
 int main(int argc,  char** argv){
 
-	if(argc < 1 || argc > 1){
+	if(argc !=  2){
 		printf("Não foi fornecido o número de argumentos correto na chamada do programa.\n");
 		exit(1);
+	}else{
+		simulacao(argv[1]);
 	}
 
-	simulacao(argv[0]);
+	
 
 	return 0;
 }
