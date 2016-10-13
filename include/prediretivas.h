@@ -38,4 +38,4 @@ void validaProximaLinhaIF(Linha linhaCodigo);
 Linha validaIF(Linha linhaCodigo);
 Linha *leArquivo(char *nomeArquivo);
 void liberaStructArquivo(Linha *arquivo);
-char *geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal);
+void geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal);
