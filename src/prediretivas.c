@@ -309,7 +309,7 @@ Linha validaEQU(Linha linhaCodigo){
 	y = verificaSeTemMuitasLabelsLinha(linhaCodigo); /*verifica se tem mais de uma label declarada na linha*/
 	if((z == 1 || z == 2) || x == 1 || y == 1){
 		linhaCodigo.possuiEQU = 0; /*caso tenha erros relacionados ao EQU, isso quer dizer que a flag de possuiEQU = 0*/
-		linhaCodigo.IFvalido = 2; /*imprime a linha do EQU invalido no arquivo final*/
+		linhaCodigo.IFvalido = 0; /*nao imprime a linha do EQU invalido no arquivo final*/
 	} 
 
 	return linhaCodigo;
@@ -465,6 +465,7 @@ Linha *leArquivo(char *nomeArquivo){
 		} 
 		if(verificaLabels_eEQU(arquivoEntrada[linha-1].linhaArquivo) == 2){
 			printf("Linha %d: Erro sintatico! Diretiva EQU sem uma label\n", linha);
+			arquivoEntrada[linha-1].IFvalido = 0;
 		} 
 		arquivoEntrada[linha-1].IFvalido = 2; /*todas as linhas, a principio, recebem na flag IFvalido o valor 2*/
 		if(arquivoEntrada[linha-1].possuiIF == 1) arquivoEntrada[linha-1].IFvalido = 0; /*a principio assumir que todas as linhas com a diretiv IF sao invalidas*/
@@ -492,7 +493,7 @@ void liberaStructArquivo(Linha *arquivo){
 
 /*Funcao que vai gerar o arquivo final, e retorna o nome do arquivo final, com a extensao .pre*/
 /*Recebe o nome do arquivo .asm(de entrada) e o nome do arquivo final, que tera a extensao .pre*/
-char *geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
+void geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 
 	char *arquivoFinal;
 	int lenghtStringArquivoFinal = strlen(nomeArquivoFinal) + 5, i = 0;
@@ -530,14 +531,15 @@ char *geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 	/*parte que vai escrever no arquivo final*/
 	for(i = 0; i < numero_de_linhas; i++){
 		/*apenas escreve no arquivo se a flag IFvalido for 1 ou 2*/
+		if(verificaLabels_eEQU(arquivoEntrada[i].linhaArquivo) == 2) arquivoEntrada[i].IFvalido = 0;/*se nao tiver label atrelada a uma diretiva EQU, nao escreve no arquivo final*/
 		if(arquivoEntrada[i].IFvalido == 1 || arquivoEntrada[i].IFvalido == 2){
 			/*insere no arquivo final a linha correspondente ao arquivo original e a string equivalente a linha do arquivoteste*/
 			fprintf(fp, "%d %s", arquivoEntrada[i].linhaAtual, arquivoEntrada[i].linhaArquivo);
 		}
 	}
 
+	free(arquivoFinal);
 	liberaStructArquivo(arquivoEntrada);
 	fclose(fp);
 
-	return arquivoFinal;
 }
