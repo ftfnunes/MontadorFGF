@@ -18,7 +18,9 @@ Linha *arquivoEntrada; /*Sera um vetor de structs do tipo Linha, aonde cada stru
 
 /*Assinaturas das funcoes*/
 int verificaseCharInteiro(char c);
+int verificaseCharehEntreAeFouNumerico(char c);
 int stringToInt(char *nstr);
+int contaNumeroPalavrasString(char *string);
 void deixaMaiusculo(char *string);
 int apontaErroLexicoLabelEQU(Linha linhaCodigo);
 int verificaLabels_eEQU(char *string);
