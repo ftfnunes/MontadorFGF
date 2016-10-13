@@ -10,6 +10,13 @@ int verificaseCharInteiro(char c){
 	return 0; /*nao eh um inteiro*/
 }
 
+/*Verifica se char eh entre A e F ou se eh numerico, para numeros hexadecimais*/
+int verificaseCharehEntreAeFouNumerico(char c){
+	if((c > 64 && c < 71) || (c > 47 && c < 58)) return 1;
+
+	return 0;
+}
+
 /*Funcao que converte de string para inteiro(pode ser tanto decimal quanto hexadecimal)*/
 int stringToInt(char *nstr){
 	int num = 0, count = 1, i;
@@ -25,6 +32,32 @@ int stringToInt(char *nstr){
 		return num;
 	}
 	return atoi(nstr);
+}
+
+/*Funcao que conta o numero de palavras que tem em uma string*/
+/*Recebe uma string e retorna o numero de palavras*/
+int contaNumeroPalavrasString(char *string){
+
+	char *ptr = NULL, tamanhoString = strlen(string), *aux = NULL;
+	int contaPalavras = 0;
+
+	aux = (char *)malloc(tamanhoString*sizeof(char));
+	if(aux == NULL){
+		printf("(Funcao contaNumeroPalavrasString)Nao foi possivel alocar memoria!\n");
+		exit(1);
+	}
+
+	strcpy(aux, string);
+
+	ptr = strtok(aux, " \t"); /*retorna substring*/
+	while(ptr != NULL){
+		contaPalavras++;
+		ptr = strtok(NULL, " \t");
+	}
+	
+	free(aux);
+	return contaPalavras;
+
 }
 
 /*Funcao que recebe uma string e transforma todos os chars em maiusculos*/
@@ -59,18 +92,15 @@ int apontaErroLexicoLabelEQU(Linha linhaCodigo){
 
 /*Funcao que verifica se tem a diretiva EQU na linha e ja indica, se tem ou nao label*/
 /*Se tiver a diretiva com label, retorna 1, se tiver apenas EQU retorna 2(Erro sintatico), se nao tiver, retorna 0*/
-int verificaLabels_eEQU(char *string){	
+int verificaLabels_eEQU(char *string){
 	char *ptr = NULL, *ptr2 = NULL;
 	ptr = strpbrk(string, ":"); /*o ponteiro recebera o local que aparece a primeira ocorrencia do char :*/
 	ptr2 = strstr(string, "EQU");/*o ponteiro recebera o local que aparece a primeira ocorrencia da string "EQU"*/
-	if(ptr != NULL && ptr2 != NULL && (*(ptr2+3) == ' ')) return 1; /*Possui uma label na linha e a diretiva EQU*/
-	if(ptr == NULL && ptr2 != NULL && (*(ptr2+3) == ' ')) return 2; /*Possui apenas a diretiva EQU na linha, sem label, que eh um erro sintatico*/
+	if(ptr != NULL && ptr2 != NULL && (*(ptr2+3) == ' ' || *(ptr2-1) == ':')) return 1; /*Possui uma label na linha e a diretiva EQU*/
+	if(ptr == NULL && ptr2 != NULL && *(ptr2+3) == ' ') return 2; /*Possui apenas a diretiva EQU na linha, sem label, que eh um erro sintatico*/
 
 	return 0; /*Por default, assumir que nao tem a diretiva EQU e nem uma label*/
 }
-
-/*Funcao que pega a label do EQU e o valor que esta sendo atribuido*/
-
 
 /*Funcao que verifica se tem comentarios na string recebida, que no caso, sera uma linha do arquivo fonte*/
 /*Se tiver, retorna 1, senao, retorna 0*/
@@ -156,22 +186,38 @@ Linha substituiLabelsporValor(Linha linhaCodigo){
 }
 
 /*Funcao que apontara erro caso o valor atribuido a diretiva EQU tenha algum caracter nao numerico*/
+/*Funcao que apontara erro caso o valor atribuido a diretiva EQU tenha algum caracter nao numerico*/
 int verificaSeValorEQUValido(Linha linhaCodigo){
 	int contador = 0, tamanhoString = strlen(linhaCodigo.valorEQU), i = 0;
-	int flagHexadecimal = 0, contador1 = 0;
+	int flagHexadecimal = 0, contador1 = 0, flagNegativo = 0, flagHexadecimalNegativo = 0;
 
 	/*Se a flag hexa for 1, quer dizer que o numero eh um hexadecimal*/
-	if(linhaCodigo.valorEQU[0] == '0' && linhaCodigo.valorEQU[1] == 'X'){
+	if((linhaCodigo.valorEQU[0] == '0' && linhaCodigo.valorEQU[1] == 'X')){
 		flagHexadecimal = 1;
+	}
+
+	if(linhaCodigo.valorEQU[0] == '-' && linhaCodigo.valorEQU[1] == '0' && linhaCodigo.valorEQU[2] == 'X'){
+		flagHexadecimalNegativo = 1;
+	}
+
+	if(linhaCodigo.valorEQU[0] == '-'){
+		flagNegativo = 1;
 	}
 
 	for(i = 0; i < tamanhoString; i++){
 		/*se nao for numerico, incrementa o contador*/
-		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimal == 0){
+		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimal == 0 && flagNegativo == 0){
 			contador++;
 		}
 
-		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimal == 1 && i > 1){
+		if(verificaseCharInteiro(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimal == 0 && flagHexadecimalNegativo == 0 && flagNegativo == 1 && i > 0){
+			contador++;
+		}
+
+		if(verificaseCharehEntreAeFouNumerico(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimal == 1 && i > 1){
+			contador1++;
+		}
+		if(verificaseCharehEntreAeFouNumerico(linhaCodigo.valorEQU[i]) == 0 && flagHexadecimalNegativo == 1 && i > 2){
 			contador1++;
 		}
 	}
@@ -208,7 +254,7 @@ int verificaSeTemMuitasLabelsLinha(Linha linhaCodigo){
 Linha validaEQU(Linha linhaCodigo){
 
 	int i = 0, lenght = 0, x = 0, z = 0, y = 0, j = 0;
-	char auxiliar[201], auxiliar2[201], auxiliar3[201]; /*strings auxiliares*/
+	char auxiliar[201], auxiliar2[201], auxiliar3[201], numeroPalavras = 0; /*strings auxiliares*/
 	char *ptr = NULL;
 
 	ptr = strstr(linhaCodigo.linhaArquivo, "- "); /*verifica se tem negativo*/
@@ -223,11 +269,35 @@ Linha validaEQU(Linha linhaCodigo){
 	auxiliar[lenght] = '\0';
 	strcpy(linhaCodigo.label_EQU, auxiliar); /*recebe a label*/
 	
+	numeroPalavras = contaNumeroPalavrasString(linhaCodigo.linhaArquivo);
+
 	if(ptr == NULL){
-		sscanf(linhaCodigo.linhaArquivo, "%*s %*s %s", auxiliar3); /*recebe o valor da EQU em uma string*/
+		switch(numeroPalavras){
+			case 2: 
+				sscanf(linhaCodigo.linhaArquivo, "%*s %s", auxiliar3); /*caso for LABEL:EQU VALOR----recebe o valor da EQU em uma string*/
+				break;
+			case 3: 
+				sscanf(linhaCodigo.linhaArquivo, "%*s %*s %s", auxiliar3); /*caso for LABEL: EQU VALOR, ou LABEL :EQU VALOR-----recebe o valor da EQU em uma string*/
+				break;
+			case 4: 
+				sscanf(linhaCodigo.linhaArquivo, "%*s %*s %*s %s", auxiliar3); /*caso for LABEL : EQU VALOR-----recebe o valor da EQU em uma string*/
+				break;
+		}
 	}else{
-		sscanf(linhaCodigo.linhaArquivo, "%*s %*s %s %s", auxiliar3, auxiliar2); /*para caso tenha um negativo sem com espaco. Ex: - 25*/
-		strcat(auxiliar3, auxiliar2); /*junta o negativo com o outro caracter*/
+		switch(numeroPalavras){
+			case 3: 
+				sscanf(linhaCodigo.linhaArquivo, "%*s %s %s", auxiliar3, auxiliar2); /*para caso tenha um negativo sem com espaco. Ex: - 25*/
+				strcat(auxiliar3, auxiliar2); /*junta o negativo com o outro caracter*/
+				break;
+			case 4: 
+				sscanf(linhaCodigo.linhaArquivo, "%*s %*s %s %s", auxiliar3, auxiliar2); /*para caso tenha um negativo sem com espaco. Ex: - 25*/
+				strcat(auxiliar3, auxiliar2); /*junta o negativo com o outro caracter*/
+				break;
+			case 5: 
+				sscanf(linhaCodigo.linhaArquivo, "%*s %*s %*s %s %s", auxiliar3, auxiliar2); /*para caso tenha um negativo sem com espaco. Ex: - 25*/
+				strcat(auxiliar3, auxiliar2); /*junta o negativo com o outro caracter*/
+				break;
+		}
 	}
 
 	strcpy(linhaCodigo.valorEQU, auxiliar3); /*recebe o valor que esta sendo atribuido ao EQU*/
