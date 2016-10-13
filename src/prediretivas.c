@@ -54,7 +54,7 @@ int contaNumeroPalavrasString(char *string){
 		contaPalavras++;
 		ptr = strtok(NULL, " \t");
 	}
-	
+
 	free(aux);
 	return contaPalavras;
 
@@ -101,6 +101,9 @@ int verificaLabels_eEQU(char *string){
 
 	return 0; /*Por default, assumir que nao tem a diretiva EQU e nem uma label*/
 }
+
+/*Funcao que pega a label do EQU e o valor que esta sendo atribuido*/
+
 
 /*Funcao que verifica se tem comentarios na string recebida, que no caso, sera uma linha do arquivo fonte*/
 /*Se tiver, retorna 1, senao, retorna 0*/
@@ -186,7 +189,6 @@ Linha substituiLabelsporValor(Linha linhaCodigo){
 }
 
 /*Funcao que apontara erro caso o valor atribuido a diretiva EQU tenha algum caracter nao numerico*/
-/*Funcao que apontara erro caso o valor atribuido a diretiva EQU tenha algum caracter nao numerico*/
 int verificaSeValorEQUValido(Linha linhaCodigo){
 	int contador = 0, tamanhoString = strlen(linhaCodigo.valorEQU), i = 0;
 	int flagHexadecimal = 0, contador1 = 0, flagNegativo = 0, flagHexadecimalNegativo = 0;
@@ -253,11 +255,11 @@ int verificaSeTemMuitasLabelsLinha(Linha linhaCodigo){
 /*Recebe a struct(linha) que esta sendo verificada */
 Linha validaEQU(Linha linhaCodigo){
 
-	int i = 0, lenght = 0, x = 0, z = 0, y = 0, j = 0;
-	char auxiliar[201], auxiliar2[201], auxiliar3[201], numeroPalavras = 0; /*strings auxiliares*/
+	int i = 0, lenght = 0, x = 0, z = 0, y = 0, j = 0, numeroPalavras = 0;
+	char auxiliar[201], auxiliar2[201], auxiliar3[201]; /*strings auxiliares*/
 	char *ptr = NULL;
 
-	ptr = strstr(linhaCodigo.linhaArquivo, "- "); /*verifica se tem negativo*/
+	ptr = strstr(linhaCodigo.linhaArquivo, "- "); /*verifica se tem negativo com espaco*/
 	/*ignora espacos ou tabs antes da declaracao da label*/
 	for(i = 0; linhaCodigo.linhaArquivo[i] != ':'; i++){
 		if(linhaCodigo.linhaArquivo[i] != ' ' && linhaCodigo.linhaArquivo[i] != '\t'){
@@ -268,7 +270,7 @@ Linha validaEQU(Linha linhaCodigo){
 	}
 	auxiliar[lenght] = '\0';
 	strcpy(linhaCodigo.label_EQU, auxiliar); /*recebe a label*/
-	
+
 	numeroPalavras = contaNumeroPalavrasString(linhaCodigo.linhaArquivo);
 
 	if(ptr == NULL){
@@ -309,7 +311,7 @@ Linha validaEQU(Linha linhaCodigo){
 	y = verificaSeTemMuitasLabelsLinha(linhaCodigo); /*verifica se tem mais de uma label declarada na linha*/
 	if((z == 1 || z == 2) || x == 1 || y == 1){
 		linhaCodigo.possuiEQU = 0; /*caso tenha erros relacionados ao EQU, isso quer dizer que a flag de possuiEQU = 0*/
-		linhaCodigo.IFvalido = 0; /*nao imprime a linha do EQU invalido no arquivo final*/
+		linhaCodigo.IFvalido = 0; /*imprime a linha do EQU invalido no arquivo final*/
 	} 
 
 	return linhaCodigo;
@@ -405,7 +407,6 @@ Linha validaIF(Linha linhaCodigo){
 			}
 		}
 	}
-
 	/*caso IF seja valido, parte do codigo que validara a proxima linha do arquivo*/
 	validaProximaLinhaIF(linhaCodigo);
 	
@@ -416,8 +417,6 @@ Linha validaIF(Linha linhaCodigo){
 
 	linhaCodigo.IFvalido = 0; /*zera a flag de IFvalido da linha que esta sendo lida, considerando que eh um IF, e assumindo que a linha seguinte
 							   tenha sido validada, caso o IF  seja valido */
-	
-
 
 	return linhaCodigo;
 
@@ -465,7 +464,6 @@ Linha *leArquivo(char *nomeArquivo){
 		} 
 		if(verificaLabels_eEQU(arquivoEntrada[linha-1].linhaArquivo) == 2){
 			printf("Linha %d: Erro sintatico! Diretiva EQU sem uma label\n", linha);
-			arquivoEntrada[linha-1].IFvalido = 0;
 		} 
 		arquivoEntrada[linha-1].IFvalido = 2; /*todas as linhas, a principio, recebem na flag IFvalido o valor 2*/
 		if(arquivoEntrada[linha-1].possuiIF == 1) arquivoEntrada[linha-1].IFvalido = 0; /*a principio assumir que todas as linhas com a diretiv IF sao invalidas*/
@@ -516,8 +514,8 @@ void geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 		if(arquivoEntrada[i].possuiEQU == 1){
 			arquivoEntrada[i] = validaEQU(arquivoEntrada[i]);
 		}
-		if(arquivoEntrada[i].possuiIF == 1){	
-		 arquivoEntrada[i] = validaIF(arquivoEntrada[i]);
+		if(arquivoEntrada[i].possuiIF == 1){
+			arquivoEntrada[i] = validaIF(arquivoEntrada[i]);
 		}
 	}
 
@@ -531,15 +529,15 @@ void geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 	/*parte que vai escrever no arquivo final*/
 	for(i = 0; i < numero_de_linhas; i++){
 		/*apenas escreve no arquivo se a flag IFvalido for 1 ou 2*/
-		if(verificaLabels_eEQU(arquivoEntrada[i].linhaArquivo) == 2) arquivoEntrada[i].IFvalido = 0;/*se nao tiver label atrelada a uma diretiva EQU, nao escreve no arquivo final*/
+		if(verificaLabels_eEQU(arquivoEntrada[i].linhaArquivo) == 2) arquivoEntrada[i].IFvalido = 0; /*se tiver a diretiva EQU sem label, n escreve no arqivo final*/
 		if(arquivoEntrada[i].IFvalido == 1 || arquivoEntrada[i].IFvalido == 2){
 			/*insere no arquivo final a linha correspondente ao arquivo original e a string equivalente a linha do arquivoteste*/
 			fprintf(fp, "%d %s", arquivoEntrada[i].linhaAtual, arquivoEntrada[i].linhaArquivo);
 		}
 	}
 
-	free(arquivoFinal);
 	liberaStructArquivo(arquivoEntrada);
 	fclose(fp);
-
+	free(arquivoFinal);
 }
+
