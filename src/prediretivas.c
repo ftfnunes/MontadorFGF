@@ -102,9 +102,6 @@ int verificaLabels_eEQU(char *string){
 	return 0; /*Por default, assumir que nao tem a diretiva EQU e nem uma label*/
 }
 
-/*Funcao que pega a label do EQU e o valor que esta sendo atribuido*/
-
-
 /*Funcao que verifica se tem comentarios na string recebida, que no caso, sera uma linha do arquivo fonte*/
 /*Se tiver, retorna 1, senao, retorna 0*/
 int verificaComentarios(char *string){
@@ -273,6 +270,7 @@ Linha validaEQU(Linha linhaCodigo){
 
 	numeroPalavras = contaNumeroPalavrasString(linhaCodigo.linhaArquivo);
 
+	/*parte da funcao que pega o valor da diretiva EQU*/
 	if(ptr == NULL){
 		switch(numeroPalavras){
 			case 2: 
@@ -311,7 +309,7 @@ Linha validaEQU(Linha linhaCodigo){
 	y = verificaSeTemMuitasLabelsLinha(linhaCodigo); /*verifica se tem mais de uma label declarada na linha*/
 	if((z == 1 || z == 2) || x == 1 || y == 1){
 		linhaCodigo.possuiEQU = 0; /*caso tenha erros relacionados ao EQU, isso quer dizer que a flag de possuiEQU = 0*/
-		linhaCodigo.IFvalido = 0; /*imprime a linha do EQU invalido no arquivo final*/
+		linhaCodigo.IFvalido = 0; /*nao imprime a linha do EQU invalido no arquivo final*/
 	} 
 
 	return linhaCodigo;
