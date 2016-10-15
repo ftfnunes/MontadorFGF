@@ -19,6 +19,13 @@ Montador: $(OBJ)
 $(ODIR)/%.o: $(SRC_DIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+Simulador: obj/simulador.o
+	$(CC) -o $@ $(SRC_DIR)/main.c $(ODIR)/simulador.o $(CFLAGS)
+
+obj/simulador.o: $(SRC_DIR)/simulador.c $(IDIR)/simulador.h
+	$(CC) -c -o $@ src/simulador.c $(CFLAGS)
+	
+
 .PHONY: clean
 
 clean:

@@ -277,7 +277,7 @@ int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_
 		return ERRO;
 	}
 	else if(inst_code == DIV && sym->is_const0 == YES){
-		printf("Linha %s - Erro Semantico: %s eh constante 0\n", line_number, aux->token);
+		printf("Linha %s - Erro Semantico: %s eh constante 0, impossivel dividir\n", line_number, aux->token);
 		return ERRO;
 	}
 	else if(((inst_code == STORE || inst_code == INPUT) && sym->is_const == YES) || (is_snd_arg == YES && sym->is_const == YES)){
