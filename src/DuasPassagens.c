@@ -435,10 +435,6 @@ table *first_pass(FILE *fp, int *is_ok){
 	char *line_number;
 
 	while((line = get_line(fp)) != NULL){
-		if(just_label == NO)
-			has_stop = NO;
-		else
-			just_label = NO;
 
 		smbl = line;
 		if(smbl->type != NUMBER){
@@ -496,6 +492,11 @@ table *first_pass(FILE *fp, int *is_ok){
 			continue;
 		}
 		
+		if(just_label == NO)
+			has_label = NO;
+		else
+			just_label = NO;
+
 		/*Verifica se ha rotulo*/
 		if(smbl->next != NULL && smbl->next->type == COLON){
 			if(smbl->type != SYMBOL){
@@ -618,7 +619,6 @@ table *first_pass(FILE *fp, int *is_ok){
 				}
 			}
 			else{
-				has_stop = OK;
 				if(smbl == NULL){
 					break;
 				}
@@ -627,6 +627,7 @@ table *first_pass(FILE *fp, int *is_ok){
 					error_flag = ERRO;
 					continue;
 				}
+				has_stop = OK;
 			}
 		}
 		/*Se for diretiva*/

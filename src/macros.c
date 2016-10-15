@@ -17,7 +17,6 @@ void processa_macros(char *arq_pre_processado){
 
 	sprintf(arqEntrada, "%s.pre", arq_pre_processado);
 	sprintf(arqFinal, "%s.mcr", arq_pre_processado);
-	printf("%s\n", arqEntrada);
 
 	fp = fopen(arqEntrada, "r");
 	if(!fp){

@@ -116,12 +116,16 @@ int funcaoInput(){
 	char usuarioDigitou[100];
 	int valorDigitado = 0;
 
-	do{
+	printf("INPUT: ");
+	scanf("%s", usuarioDigitou);
+	getchar();
+
+	while(validaUsuarioDigita(usuarioDigitou) == 1){
+		printf("VALOR DIGITADO INVALIDO! DIGITE NOVAMENTE\n");
 		printf("INPUT: ");
 		scanf("%s", usuarioDigitou);
 		getchar();
-
-	}while(validaUsuarioDigita(usuarioDigitou) == 1);
+	}
 	
 	valorDigitado = stringToInt(usuarioDigitou);
 
@@ -148,25 +152,33 @@ void simulacao(char *nomeArquivo){
 	do{
 		switch(PC){
 			case ADD: 
+				printf("INSTRUCAO ADD: ");
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
+				printf("ACC <- %d + %d\n", ACC, vetorMemoria[posicaoMemoria]);
 				ACC += vetorMemoria[posicaoMemoria];	
 				posicaoAtual += 2; /*PC ira apontar para posicaoAtual + 2, que eh o tamanho da instrucao ADD*/
 				PC = vetorMemoria[posicaoAtual]; 
 				break;
 			case SUB: 
+				printf("INSTRUCAO SUB: ");
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
+				printf("ACC <- %d - %d\n", ACC, vetorMemoria[posicaoMemoria]);
 				ACC -= vetorMemoria[posicaoMemoria];	
 				posicaoAtual += 2; /*PC ira apontar para posicaoAtual + 2, que eh o tamanho da instrucao ADD*/
 				PC = vetorMemoria[posicaoAtual]; 
 				break;
 			case MULT: 
+				printf("INSTRUCAO MULT: ");
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
+				printf("ACC <- %d * %d\n", ACC, vetorMemoria[posicaoMemoria]);
 				ACC *= vetorMemoria[posicaoMemoria];	
 				posicaoAtual += 2; /*PC ira apontar para posicaoAtual + 2, que eh o tamanho da instrucao ADD*/
 				PC = vetorMemoria[posicaoAtual]; 
 				break;
 			case DIV: 
+				printf("INSTRUCAO DIV: ");
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
+				printf("ACC <- %d / %d\n", ACC, vetorMemoria[posicaoMemoria]);
 				if(vetorMemoria[posicaoMemoria] != 0){
 					ACC /= vetorMemoria[posicaoMemoria];	
 					posicaoAtual += 2; /*PC ira apontar para posicaoAtual + 2, que eh o tamanho da instrucao ADD*/
@@ -178,58 +190,75 @@ void simulacao(char *nomeArquivo){
 				
 				break;
 			case JMP: 
+				printf("INSTRUCAO JMP: ");
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
+				printf("PC <- %d\n", posicaoMemoria);
 				posicaoAtual = posicaoMemoria;
 				PC = vetorMemoria[posicaoAtual]; 
 				break;
 			case JMPN: 
+				printf("INSTRUCAO JMPN: ");
 				if(ACC < 0){
 					posicaoMemoria = vetorMemoria[posicaoAtual+1];
+					printf("ACC < 0: PC <- %d \n", posicaoMemoria);
 					posicaoAtual = posicaoMemoria;
 					PC = vetorMemoria[posicaoAtual];
 				}else{
 					posicaoAtual += 2;
+					printf("ACC >= 0: PC <- PROXIMA INSTRUCAO\n");
 					PC = vetorMemoria[posicaoAtual];
 				}
 				break;
 			case JMPP: 
+				printf("INSTRUCAO JMPP: ");
 				if(ACC > 0){
 					posicaoMemoria = vetorMemoria[posicaoAtual+1];
+					printf("ACC > 0: PC <- %d\n", posicaoMemoria);
 					posicaoAtual = posicaoMemoria;
 					PC = vetorMemoria[posicaoAtual];
 				}else{
 					posicaoAtual += 2;
+					printf("ACC <= 0: PC <- PROXIMA INSTRUCAO\n");
 					PC = vetorMemoria[posicaoAtual];
 				}
 				break;
 			case JMPZ: 
+				printf("INSTRUCAO JMPZ: ");
 				if(ACC == 0){
 					posicaoMemoria = vetorMemoria[posicaoAtual+1];
+					printf("ACC = 0: PC <- %d\n", posicaoMemoria);
 					posicaoAtual = posicaoMemoria;
 					PC = vetorMemoria[posicaoAtual];
 				}else{
 					posicaoAtual += 2;
+					printf("ACC != 0: PC <- PROXIMA INSTRUCAO\n");
 					PC = vetorMemoria[posicaoAtual];
 				}
 				break;
 			case COPY: 
+				printf("INSTRUCAO COPY: ");
 				vetorMemoria[posicaoAtual+2] = vetorMemoria[posicaoAtual+1]; /*OP2 <- OP1*/
+				printf("MEM[%d] = %d <- MEM[%d] == %d\n", posicaoAtual+2, vetorMemoria[posicaoAtual+2], posicaoAtual+1, vetorMemoria[posicaoAtual+1]);
 				posicaoAtual += 3; /*tamanho da instrucao COPY eh 3*/
 				PC = vetorMemoria[posicaoAtual];
 				break;
 			case LOAD: 
+				printf("INSTRUCAO LOAD: ");
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
+				printf("ACC <- MEM[%d] = %d\n", posicaoMemoria, vetorMemoria[posicaoMemoria]);
 				ACC = vetorMemoria[posicaoMemoria]; /*ACC <- MEM[OP]*/
 				posicaoAtual += 2; /*tamanho da instrucao LOAD eh 2*/
 				PC = vetorMemoria[posicaoAtual];
 				break;
 			case STORE: 
+				printf("INSTRUCAO STORE: ");
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
+				printf("MEM[%d] <- ACC = %d\n", posicaoMemoria, ACC);
 				vetorMemoria[posicaoMemoria] = ACC; /*MEM[OP] <- ACC*/
 				posicaoAtual += 2; /*tamanho da instrucao STORE eh 2*/
 				PC = vetorMemoria[posicaoAtual];
 				break;
-			case INPUT: 
+			case INPUT:
 				posicaoMemoria = vetorMemoria[posicaoAtual+1];
 				vetorMemoria[posicaoMemoria] = funcaoInput(); /*funcaoInput recebe o argumento do usuario e trata qualquer erro*/
 				posicaoAtual += 2; /*tamanho da instrucao INPUT eh 2*/
@@ -242,16 +271,16 @@ void simulacao(char *nomeArquivo){
 				PC = vetorMemoria[posicaoAtual];
 				break;
 			case STOP: 
+				printf("INSTRUCAO STOP ");
 				encerra = 1;
 				break;
 			default: 
-				printf("%d\n", PC);
-				printf("Instrucao invalida!\n");
+				printf("INSTRUCAO INVALIDA!\n");
 				encerra = 1;/*se a instrucao for invalida encerra o programa*/
 				break;
 		}
 	}while(encerra == 0);
 
-	printf("\n\n-------Fim da simulacao!-------\n\n");
+	printf("\n\n-------FIM DA SIMULACAO!-------\n\n");
 	
 }
