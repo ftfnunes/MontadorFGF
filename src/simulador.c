@@ -8,6 +8,8 @@
 void leArquivoObjeto(char *arquivoObjeto){
 
 	int i = 0; 
+	char strAux[31];
+	int localArq = 0;
 	FILE *fp = fopen(arquivoObjeto, "r");
 	if(fp == NULL){
 		printf("Nao foi possivel abrir o codigo objeto!\n");
@@ -15,7 +17,20 @@ void leArquivoObjeto(char *arquivoObjeto){
 	}
 
 	while(!feof(fp)){
+		fscanf(fp, "%s", strAux);
+		if(strcmp(strAux, "C:") == 0){
+			localArq = ftell(fp); /* localArq tera a parte do arquivo aonde tem os codigos*/
+			break;
+		}
+	}
+
+	fseek(fp, localArq, SEEK_SET);
+	i = 0;
+	/*insere os codigos no vetor de memoria do simulador*/
+	while(!feof(fp)){
 		fscanf(fp, "%d", &vetorMemoria[i]);
+		if(feof(fp)) break; /*para nao duplicar o ultimo numero do arquivo, caso tenha quebra de linha*/
+		printf("%d ", vetorMemoria[i]);
 		i++;
 	}
 	numero_elementos = i;
