@@ -475,7 +475,7 @@ int second_pass(FILE *infp, table *ts, FILE *outfp, table **tu_param, char *bitM
 }
 
 /*Realiza o algoritmo da primeira passagem, detectendo possiveis erros na formacao das instrucoes.*/
-table *first_pass(FILE *fp, int *is_ok, table **td_param){
+table *first_pass(FILE *fp, int *is_ok, table **td_param, int is_module){
 	table *td;
 	table *ts = create_tb();
 	int end_count = 0;
@@ -485,6 +485,8 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param){
 	int num_of_args, inst_code, dir_code, has_stop = ERRO, has_label = NO, just_label = NO;
 	int space_size;
 	char *line_number;
+	int has_end = NO;
+	int has_begin = NO;
 
 
 	(*td_param) = create_tb();
@@ -492,6 +494,12 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param){
 
 	while((line = get_line(fp)) != NULL){
 		smbl = line;
+
+		if(has_end == YES){
+			printf("Linha %s - Erro Semantico: algo apos diretiva END\n", line_number);
+			continue;
+		}
+
 		if(smbl->type != NUMBER){
 			printf("Erro no formato do arquivo\n");
 			exit(1);
@@ -565,6 +573,10 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param){
 				}
 				continue;
 			}
+		}
+		else if(identify_dir(smbl->token) == END && is_module == YES){
+			has_end = YES;
+			continue;
 		}
 		
 		if(just_label == NO){
@@ -709,7 +721,7 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param){
 		/*Se for diretiva*/
 		else{
 			dir_code=identify_dir(smbl->token);
-			if(has_label == NO){
+			if(has_label == NO && dir_code != BEGIN){
 				printf("Linha %s - Erro Sintatico: diretiva nao possui rotulo\n", line_number);
 				error_flag = ERRO;
 			}
@@ -784,6 +796,7 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param){
 			else if(dir_code == EXTERN){
 				if(smbl->next != NULL && smbl->next->type != BREAK){
 					printf("Linha %s - Erro Sintatico: ma formacao da diretiva EXTERN\n", line_number);
+					error_flag = ERRO;
 					continue;
 				}
 				if(ts->last != NULL){
@@ -791,8 +804,35 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param){
 					ts->last->value = 0;
 				}
 			}
+			else if(dir_code == BEGIN){
+				if(is_module == NO){
+					printf("Linha %s - Erro Semantico: diretiva begin em um unico codigo\n", line_number);
+					error_flag = ERRO;
+					continue;
+				}
+				else if(section != NONE){
+					has_begin = YES;
+					printf("Linha %s - Erro Semantico: diretiva begin nao esta no inicio do modulo\n", line_number);
+					error_flag = ERRO;
+					continue;
+				}
+				else{
+					has_begin = YES;
+				}
+			}
 		}
 		has_label = NO;
+	}
+
+	if(has_begin == NO && is_module == YES){
+		printf("Linha %s - Erro Semantico: Modulo sem diretiva BEGIN\n", line_number);
+		error_flag = ERRO;
+	}
+
+
+	if(has_end == NO && is_module == YES){
+		printf("Linha %s - Erro Semantico: Modulo sem diretiva END\n", line_number);
+		error_flag = ERRO;
 	}
 
 	if(update_td(td, ts) == ERRO){
@@ -840,6 +880,10 @@ int identify_dir(char *token){
 		return EXTERN;
 	if(strcmp(token, "PUBLIC") == 0)
 		return PUBLIC;
+	if(strcmp(token, "BEGIN") == 0)
+		return BEGIN;
+	if(strcmp(token, "END") == 0)
+		return END;
 	
 	return NOT_DIR;
 }
@@ -979,7 +1023,7 @@ int TwoPassAssembler(char *inFileName){
 		exit(1);
 	}
 
-	tb = first_pass(infp, &firstPass_error, &td);
+	tb = first_pass(infp, &firstPass_error, &td, YES);
 	sndPass_error = second_pass(infp, tb, temp, &tu, bitMap);
 
 	create_header(td, tu, &outfp, inFileName, bitMap);

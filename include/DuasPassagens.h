@@ -115,7 +115,7 @@ int identify_dir(char *token);
 
 int is_argument(symbol **line);
 
-table *first_pass(FILE *fp, int *is_ok, table **td);
+table *first_pass(FILE *fp, int *is_ok, table **td, int is_module);
 
 int strtoint(char *nstr);
 

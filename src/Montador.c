@@ -21,7 +21,7 @@
 
 int main(int argc,  char** argv){
 
-	if(argc != 4){
+	if(argc < 4 || argc > 6){
 		printf("Não foi fornecido o número de argumentos correto na chamada do programa.\n");
 		exit(1);
 	}
