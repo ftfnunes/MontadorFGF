@@ -1,5 +1,8 @@
 #include "DuasPassagens.h"
 
+
+/*Essa funcao atua como o scanner do programa, separando os tokens e classificando-os, cada token eh retornado como um registro do tipo 
+  symbol, que pode ser adicionado a uma lista encadeada*/
 symbol *get_token(FILE *fp){
 	char *buffer = (char *)malloc(TAM_ROT*sizeof(char)), c_temp;
 	int is_ok;
@@ -79,6 +82,8 @@ symbol *get_token(FILE *fp){
 	return newSymbol;
 }
 
+
+/*A partir de um determinado ponto de um arquivo, tenta ler uma string*/
 int read_char_token(char *buffer, FILE *fp){
 	char c_temp;
 	int c_type, i;
@@ -110,6 +115,7 @@ int read_char_token(char *buffer, FILE *fp){
 	return VALID;
 }
 
+/*A partir de um determinado ponto de um arquivo, tenta ler um numero, se encontrar caractere, classifica o token como invalido.*/
 int read_number_token(char *buffer, FILE* fp){
 	char c_temp;
 	int c_type, i, is_hexa = 0;
@@ -169,6 +175,7 @@ int read_number_token(char *buffer, FILE* fp){
 	return VALID;
 }
 
+/*Retorna a classificacao de determinado caractere*/
 int identify_char(char c){
 	if((c >= 'A' && c <= 'Z') || c == '_')
 		return CHARACTER;
@@ -187,16 +194,7 @@ int identify_char(char c){
 	else
 		return INVALID;
 }
-
-table *create_tb(){
-	table *tb = (table *)malloc(sizeof(table));
-	tb->first = tb->last = NULL;
-	if(!tb)
-		printf("Erro no montador: falha na alocacao de memoria\n");
-	return tb;
-}
-
-/*Cria uma lista de tokens presentes numa linha*/
+/*Cria uma lista de tokens presentes numa linha de um arquivo*/
 symbol *get_line(FILE *fp){
 	symbol *first = NULL, *last = NULL;
 
@@ -219,6 +217,17 @@ symbol *get_line(FILE *fp){
 	return first;
 }
 
+
+/*Cria a tabela de simbolos, cada linha da tabela eh um registro do tipo t_line*/
+table *create_tb(){
+	table *tb = (table *)malloc(sizeof(table));
+	tb->first = tb->last = NULL;
+	if(!tb)
+		printf("Erro no montador: falha na alocacao de memoria\n");
+	return tb;
+}
+
+/*Insere uma linha nova da tabela de simbolos.*/
 int insert_symbol(table *tb, char *token, int value, int section){
 	t_line *newLine = (t_line *)malloc(sizeof(t_line));
 
@@ -229,6 +238,7 @@ int insert_symbol(table *tb, char *token, int value, int section){
 	newLine->is_const0 = NO;
 	newLine->space_size = 1;
 	newLine->next = NULL;
+	newLine->is_ext = NO;
 
 	if(tb->first == NULL){
 		tb->first = newLine;
@@ -246,6 +256,7 @@ int insert_symbol(table *tb, char *token, int value, int section){
 	return OK;
 }
 
+/*Procura um simbolo numa tabela*/
 t_line *find_symbol(table *tb, char *symbol){
 	t_line *cur_line;
 
@@ -257,7 +268,8 @@ t_line *find_symbol(table *tb, char *symbol){
 	return NULL;
 }
 
-int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_snd_arg){
+/*Dado que o ponteiro de um arquivo esta em um argumento de uma instrucao, e o argumento eh valido, retorna o valor desse argumento.*/
+int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_snd_arg, int end_count, table *tu){
 	symbol *aux = *smbl;
 	t_line *sym;
 	long int number = 0, offset;
@@ -268,11 +280,11 @@ int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_
 		printf("Linha %s - Erro Semantico: simbolo %s indefinido\n", line_number, aux->token);
 		return ERRO;
 	}
-	else if(sym->section != TEXT && inst_code >= 5 && inst_code <= 8){
+	else if(sym->section != TEXT && inst_code >= 5 && inst_code <= 8 && sym->is_const != YES){
 		printf("Linha %s - Erro Semantico: simbolo %s nao faz referencia a secao TEXT\n", line_number, aux->token);
 		return ERRO;
 	}
-	else if(sym->section != DATA && (inst_code < 5 ||inst_code > 8)){
+	else if(sym->section != DATA && (inst_code < 5 ||inst_code > 8) && sym->is_ext != YES){
 		printf("Linha %s - Erro Semantico: simbolo %s nao faz referencia a secao DATA\n", line_number, aux->token);
 		return ERRO;
 	}
@@ -284,12 +296,17 @@ int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_
 		printf("Linha %s - Erro Semantico: Tentativa de alteracao de constante\n", line_number);
 		return ERRO;
 	}
+
+	if(sym->is_ext == YES){
+		printf("teste\n");
+		insert_symbol(tu, sym->token, end_count, sym->section);
+	}
 	number = sym->value;
 	aux = aux->next;
 	if(aux != NULL && aux->type == OPERATOR){
 		aux = aux->next;
 		offset = strtoint(aux->token);
-		if(offset >= sym->space_size){
+		if(sym->is_ext == NO && offset >= sym->space_size){
 			printf("Linha %s - Erro Semantico: Acesso a espaco de memoria nao reservado\n", line_number);
 			return ERRO;
 		}
@@ -299,6 +316,7 @@ int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_
 	return number;
 }
 
+/*dado uma string de numero(decimal ou hexa), retorna um inteiro com o valor contido nessa string*/
 int strtoint(char *nstr){
 	int num = 0, count = 1, i;
 
@@ -315,13 +333,19 @@ int strtoint(char *nstr){
 	return atoi(nstr);
 }
 
-int second_pass(FILE *infp, table *ts, FILE *outfp){
+/*Realiza o algoritmo da segunda passagem, considera que os erros de formacao das instrucoes foram verificados na primeira passagem*/
+int second_pass(FILE *infp, table *ts, FILE *outfp, table **tu_param, char *bitMap){
+	table *tu;
 	int error_flag = OK;
 	symbol *line, *smbl;
+	int end_count = 0;
 	int num_of_args, inst_code, dir_code;
 	char *line_number;
 	int arg1 = 0, arg2 = 0, cnst, n_spaces = 0, i;
 	int is_negative = 0;
+
+	(*tu_param) = create_tb();
+	tu = (*tu_param);
 
 	fseek(infp, 0, SEEK_SET);
 
@@ -338,6 +362,12 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 				break;
 			continue;
 		}
+		else if(identify_dir(smbl->token) == PUBLIC){
+			if(smbl->next->next == NULL){
+				break;
+			}
+			continue;
+		}
 
 		if(smbl->next != NULL && smbl->next->type == COLON){
 			smbl = smbl->next->next;
@@ -347,11 +377,15 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 
 		if(smbl->type == INST){
 			inst_code = identify_inst(smbl->token);
+			bitMap[end_count] = '0';
+			end_count++;
 			num_of_args = number_of_addresses(inst_code) - 1;
 			smbl = smbl->next;
 			/*Recupera argumentos de acordo com a quantidade*/
 			if(num_of_args == 1){
-				arg1 = eval_arg(&smbl, ts, line_number, inst_code, NO);
+				arg1 = eval_arg(&smbl, ts, line_number, inst_code, NO, end_count, tu);
+				bitMap[end_count] = '1';
+				end_count++;
 				if(arg1 == ERRO){
 					error_flag = ERRO;
 					continue;
@@ -361,13 +395,17 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 					break;
 			}
 			else if(num_of_args == 2){
-				arg1 = eval_arg(&smbl, ts, line_number, inst_code, NO);
+				arg1 = eval_arg(&smbl, ts, line_number, inst_code, NO, end_count, tu);
+				bitMap[end_count] = '1';
+				end_count++;
 				if(arg1 == ERRO){
 					error_flag = ERRO;
 					continue;
 				}
 				smbl = smbl->next->next;
-				arg2 = eval_arg(&smbl, ts, line_number, inst_code, YES);
+				arg2 = eval_arg(&smbl, ts, line_number, inst_code, YES, end_count, tu);
+				bitMap[end_count] = '1';
+				end_count++;
 				if(arg2 == ERRO){
 					error_flag = ERRO;
 					continue;
@@ -390,17 +428,23 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 					fprintf(outfp, "0 ");
 					break;
 				}
-				if(smbl->type == BREAK)
+				if(smbl->type == BREAK){
+					bitMap[end_count] = '0';
+					end_count++;
 					fprintf(outfp, "0 ");
+				}
 				else{
 					n_spaces = strtoint(smbl->token);
-					for(i = 0; i<n_spaces; i++)
+					for(i = 0; i<n_spaces; i++){
+						bitMap[end_count] = '0';
+						end_count++;
 						fprintf(outfp, "0 ");
+					}
 					if(smbl->next == NULL)
 						break;
 				}
 			}
-			else{
+			else if(dir_code == CNST){
 				smbl = smbl->next;
 				if(smbl->type == OPERATOR && smbl->token[0] == '-'){
 					is_negative = 1;
@@ -413,18 +457,26 @@ int second_pass(FILE *infp, table *ts, FILE *outfp){
 				cnst = is_negative == 1 ? cnst*(-1) : cnst;
 				is_negative = 0;
 
+				bitMap[end_count] = '0';
+				end_count++;
 				fprintf(outfp, "%d ", cnst);
 				if(smbl->next == NULL)
 					break;
 			}
+			else{
+				continue;
+			}
 		}
 
 	}
+	bitMap[end_count] = '\0';
 	
 	return error_flag;
 }
 
-table *first_pass(FILE *fp, int *is_ok){
+/*Realiza o algoritmo da primeira passagem, detectendo possiveis erros na formacao das instrucoes.*/
+table *first_pass(FILE *fp, int *is_ok, table **td_param){
+	table *td;
 	table *ts = create_tb();
 	int end_count = 0;
 	symbol *line, *smbl; /*Lista de simbolos*/
@@ -434,8 +486,11 @@ table *first_pass(FILE *fp, int *is_ok){
 	int space_size;
 	char *line_number;
 
-	while((line = get_line(fp)) != NULL){
 
+	(*td_param) = create_tb();
+	td = (*td_param) ;
+
+	while((line = get_line(fp)) != NULL){
 		smbl = line;
 		if(smbl->type != NUMBER){
 			printf("Erro no formato do arquivo\n");
@@ -491,9 +546,30 @@ table *first_pass(FILE *fp, int *is_ok){
 			}
 			continue;
 		}
+		else if(identify_dir(smbl->token) == PUBLIC){
+			smbl = smbl->next;
+			if(find_symbol(td, smbl->token) != NULL){
+				printf("Linha %s - Erro Semantico: rotulo ja utilizado\n", line_number);
+				error_flag = ERRO;
+				continue;
+			}
+			else{
+				insert_symbol(td, smbl->token, 0, section);
+				smbl = smbl->next;
+				if(smbl == NULL){
+					break;
+				}
+				else if(smbl->type != BREAK){
+					printf("Linha %s - Erro Sintatico: erro de formacao da diretiva PUBLIC\n", line_number);
+					error_flag = ERRO;
+				}
+				continue;
+			}
+		}
 		
-		if(just_label == NO)
+		if(just_label == NO){
 			has_label = NO;
+		}
 		else
 			just_label = NO;
 
@@ -633,15 +709,15 @@ table *first_pass(FILE *fp, int *is_ok){
 		/*Se for diretiva*/
 		else{
 			dir_code=identify_dir(smbl->token);
-			if(section != DATA){
-				printf("Linha %s - Erro Semantico: diretiva em secao errada\n", line_number);
-				error_flag = ERRO;
-			}
 			if(has_label == NO){
 				printf("Linha %s - Erro Sintatico: diretiva nao possui rotulo\n", line_number);
 				error_flag = ERRO;
 			}
 			if(dir_code == SPACE){
+				if(section != DATA){
+					printf("Linha %s - Erro Semantico: diretiva em secao errada\n", line_number);
+					error_flag = ERRO;
+				}
 				smbl = smbl->next;
 				if(smbl == NULL){
 					break;
@@ -666,6 +742,10 @@ table *first_pass(FILE *fp, int *is_ok){
 				}
 			}
 			else if(dir_code == CNST){
+				if(section != DATA){
+					printf("Linha %s - Erro Semantico: diretiva em secao errada\n", line_number);
+					error_flag = ERRO;
+				}
 				if(ts->last != NULL){
 					ts->last->is_const = YES; 
 				}
@@ -701,8 +781,23 @@ table *first_pass(FILE *fp, int *is_ok){
 					continue;
 				}
 			}
+			else if(dir_code == EXTERN){
+				if(smbl->next != NULL && smbl->next->type != BREAK){
+					printf("Linha %s - Erro Sintatico: ma formacao da diretiva EXTERN\n", line_number);
+					continue;
+				}
+				if(ts->last != NULL){
+					ts->last->is_ext = YES;
+					ts->last->value = 0;
+				}
+			}
 		}
 		has_label = NO;
+	}
+
+	if(update_td(td, ts) == ERRO){
+		printf("Linha %s - Erro Semantico: Simbolo publico nao definido\n", line_number);
+		error_flag = ERRO;
 	}
 
 	if(section == NONE){
@@ -719,7 +814,21 @@ table *first_pass(FILE *fp, int *is_ok){
 	return ts;
 }
 
+int update_td(table *td, table *ts){
+	t_line *aux, *ts_line;
 
+	for(aux = td->first; aux != NULL; aux = aux->next){
+		ts_line = find_symbol(ts, aux->token);
+		if(ts_line != NULL){
+			aux->value = ts_line->value;
+		}
+		else
+			return ERRO;
+	}
+	return OK;
+}
+
+/*Identifica diretivas*/
 int identify_dir(char *token){
 	if(strcmp(token, "SECTION") == 0)
 		return SECTION;
@@ -727,10 +836,15 @@ int identify_dir(char *token){
 		return CNST;
 	if(strcmp(token, "SPACE") == 0)
 		return SPACE;
+	if(strcmp(token, "EXTERN") == 0)
+		return EXTERN;
+	if(strcmp(token, "PUBLIC") == 0)
+		return PUBLIC;
 	
 	return NOT_DIR;
 }
 
+/*Identifica o numero de enderecos que cada instrucao ocupa.*/
 int number_of_addresses(int inst){
 	switch(inst){
 		case COPY:
@@ -742,6 +856,7 @@ int number_of_addresses(int inst){
 	}
 }
 
+/*Identifica instrucoes, retornando seu opcode*/
 int identify_inst(char *token){
 	if(strcmp(token, "ADD") == 0)
 		return ADD;
@@ -775,6 +890,7 @@ int identify_inst(char *token){
 	return NOT_INST;
 }
 
+/*Verifica se a todos os tokens presentes em uma linha sao validos.*/
 int verify_line(symbol *line){
 	symbol *aux;
 	char *line_number;
@@ -791,6 +907,7 @@ int verify_line(symbol *line){
 	return OK;
 }
 
+/*Verifica se um argumento de uma instrucao esta bem formado.*/
 int is_argument(symbol **line){
 	symbol *aux = *(line);
 	if(aux->type == SYMBOL){
@@ -811,27 +928,79 @@ int is_argument(symbol **line){
 	return ERRO;
 }
 
+void create_header(table *td, table *tu, FILE **outfp, char *inFileName, char *bitMap){
+	t_line *aux;
+
+	
+	fprintf(*outfp, "N: %s\n", inFileName);
+	fprintf(*outfp, "S: %d\n", (int)strlen(bitMap));
+	fprintf(*outfp, "TD: ");
+
+	for(aux = td->first; aux != NULL; aux = aux->next){
+		fprintf(*outfp, "%s %d ", aux->token, aux->value);
+	}
+	fprintf(*outfp, "\nTU: ");
+	for(aux = tu->first; aux != NULL; aux = aux->next){
+		fprintf(*outfp, "%s %d ", aux->token, aux->value);
+	}
+	fprintf(*outfp, "\nMB: %s\n", bitMap);
+	fprintf(*outfp, "C: ");
+}
+
+void write_code(FILE *temp, FILE *outfp){
+	int aux;
+	fseek(temp, 0, SEEK_SET);
+	while(fscanf(temp, "%d", &aux) != EOF){
+		fprintf(outfp, "%d ", aux);
+	}
+}
+
+/*Chama o algortmo de duas passagens*/
 int TwoPassAssembler(char *inFileName){
-	FILE *infp, *outfp;
+	FILE *infp, *outfp, *temp;
 	table *tb;
 	int firstPass_error, sndPass_error;
 	char outputName[200];
 	char inputName[200];
-
+	char *bitMap = (char *)malloc(1000*sizeof(char));
+	table *td;
+	table *tu;
+	t_line *aux;
 
 	sprintf(outputName, "%s.o", inFileName);
 	sprintf(inputName, "%s.mcr", inFileName);
 
+	temp = fopen("temp", "w+");
 	outfp = fopen(outputName, "w");
 	infp = fopen(inputName, "r");
 
-	if(infp == NULL || outfp == NULL){
+	if(infp == NULL || outfp == NULL || temp == NULL){
 		printf("Erro na abertura dos arquivos\n");
 		exit(1);
-	} 
+	}
 
-	tb = first_pass(infp, &firstPass_error);
-	sndPass_error = second_pass(infp, tb, outfp);
+	tb = first_pass(infp, &firstPass_error, &td);
+	sndPass_error = second_pass(infp, tb, temp, &tu, bitMap);
+
+	create_header(td, tu, &outfp, inFileName, bitMap);
+
+	write_code(temp, outfp);
+
+/*
+	for(aux = tb->first; aux != NULL; aux = aux->next){
+		printf("%s %d %s\n", aux->token, aux->value, aux->is_ext == YES ? "YES" : "NO" );
+	}
+	printf("\n\n\n");
+
+	for(aux = td->first; aux != NULL; aux = aux->next){
+		printf("%s %d\n", aux->token, aux->value);
+	}
+	printf("\n\n\n");
+
+	for(aux = tu->first; aux != NULL; aux = aux->next){
+		printf("%s %d\n", aux->token, aux->value);
+	}
+	printf("\n");*/
 
 	if(sndPass_error == ERRO || firstPass_error == ERRO){
 		printf("Ocorreram erros na montagem\n");

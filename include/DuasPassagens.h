@@ -36,7 +36,12 @@
 #define SECTION 1
 #define CNST 2
 #define SPACE 3
-#define NOT_DIR 4
+#define BEGIN 4
+#define END 5
+#define EXTERN 6
+#define PUBLIC 7
+#define NOT_DIR 8
+
 
 /*Instrucoes*/
 #define ADD 1
@@ -55,7 +60,6 @@
 #define STOP 14
 #define NOT_INST 15
 
-
 typedef struct T_line {
 	char *token;
 	int value;
@@ -63,6 +67,7 @@ typedef struct T_line {
 	int is_const0;
 	int space_size;
 	int section;
+	int is_ext;
 	struct T_line *next;
 }  t_line;
 
@@ -110,10 +115,12 @@ int identify_dir(char *token);
 
 int is_argument(symbol **line);
 
-table *first_pass(FILE *fp, int *is_ok);
+table *first_pass(FILE *fp, int *is_ok, table **td);
 
 int strtoint(char *nstr);
 
-int second_pass(FILE *infp, table *ts, FILE *outfp);
+int second_pass(FILE *infp, table *ts, FILE *outfp, table **tu, char *bitMap);
 
 int TwoPassAssembler(char *fileName);
+
+int update_td(table *td, table *ts);
