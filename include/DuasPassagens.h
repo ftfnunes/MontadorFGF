@@ -121,6 +121,6 @@ int strtoint(char *nstr);
 
 int second_pass(FILE *infp, table *ts, FILE *outfp, table **tu, char *bitMap);
 
-int TwoPassAssembler(char *fileName);
+int TwoPassAssembler(char *fileName, int is_module);
 
 int update_td(table *td, table *ts);
