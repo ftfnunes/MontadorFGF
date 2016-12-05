@@ -14,6 +14,7 @@ typedef struct{
 }Linha;
 
 int numero_de_linhas; /*variavel global que guarda o numero de linhas do arquivo*/
+Linha *arquivoEntrada; /*Sera um vetor de structs do tipo Linha, aonde cada struct tera uma linha do arquivo*/
 
 /*Assinaturas das funcoes*/
 int verificaseCharInteiro(char c);
