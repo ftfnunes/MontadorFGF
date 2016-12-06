@@ -492,6 +492,7 @@ void liberaStructArquivo(Linha *arquivo){
 void geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 
 	char *arquivoFinal;
+	Linha *arquivoEntrada = NULL; /*Sera um vetor de structs do tipo Linha, aonde cada struct tera uma linha do arquivo*/
 	int lenghtStringArquivoFinal = strlen(nomeArquivoFinal) + 5, i = 0;
 	/*aloca a string auxiliar para receber o nome do arquivo final + 5, ou seja, para receber o formato .pre + \0*/
 	arquivoFinal = (char*)malloc(lenghtStringArquivoFinal*sizeof(char));

@@ -298,7 +298,6 @@ int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_
 	}
 
 	if(sym->is_ext == YES){
-		printf("teste\n");
 		insert_symbol(tu, sym->token, end_count, sym->section);
 	}
 	number = sym->value;
@@ -576,6 +575,11 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param, int is_module){
 		}
 		else if(identify_dir(smbl->token) == END && is_module == YES){
 			has_end = YES;
+			continue;
+		}
+		else if(identify_dir(smbl->token) == END && is_module == NO){
+			printf("Linha %s - Erro Semantico: Diretiva END em um unico codigo\n", line_number);
+			error_flag = ERRO;
 			continue;
 		}
 		
@@ -1000,7 +1004,7 @@ void write_code(FILE *temp, FILE *outfp){
 }
 
 /*Chama o algortmo de duas passagens*/
-int TwoPassAssembler(char *inFileName){
+int TwoPassAssembler(char *inFileName, int is_module){
 	FILE *infp, *outfp, *temp;
 	table *tb;
 	int firstPass_error, sndPass_error;
@@ -1023,7 +1027,7 @@ int TwoPassAssembler(char *inFileName){
 		exit(1);
 	}
 
-	tb = first_pass(infp, &firstPass_error, &td, YES);
+	tb = first_pass(infp, &firstPass_error, &td, is_module);
 	sndPass_error = second_pass(infp, tb, temp, &tu, bitMap);
 
 	create_header(td, tu, &outfp, inFileName, bitMap);
