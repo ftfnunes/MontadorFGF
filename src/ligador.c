@@ -490,3 +490,22 @@ void linker(char *arquivo1, char *arquivo2, char *arquivo3){
 	fclose(fp);
 
 }
+
+/*funcao main, que chama o ligador*/
+int main(int argc,  char** argv){
+
+	switch(argc){
+		case 2: 
+			linker(argv[1], "", "");
+			break;
+		case 3:
+			linker(argv[1], argv[2], ""); 
+			break;
+		case 4: 
+			linker(argv[1], argv[2], argv[3]);
+			break;
+		default: printf("Numero de argumentos invalido!\n");
+	}
+
+	return 0;
+}
