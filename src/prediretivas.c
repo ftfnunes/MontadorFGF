@@ -491,12 +491,15 @@ void liberaStructArquivo(Linha *arquivo){
 /*Recebe o nome do arquivo .asm(de entrada) e o nome do arquivo final, que tera a extensao .pre*/
 void geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 
-	char *arquivoFinal;
-	Linha *arquivoEntrada = NULL; /*Sera um vetor de structs do tipo Linha, aonde cada struct tera uma linha do arquivo*/
+	char *arquivoFinal = NULL;
 	int lenghtStringArquivoFinal = strlen(nomeArquivoFinal) + 5, i = 0;
+	
 	/*aloca a string auxiliar para receber o nome do arquivo final + 5, ou seja, para receber o formato .pre + \0*/
+	
+	arquivoEntrada = NULL;
 	arquivoFinal = (char*)malloc(lenghtStringArquivoFinal*sizeof(char));
-
+	numero_de_linhas = 0;
+	
 	sprintf(arquivoFinal, "%s%s", nomeArquivoFinal,".pre");
 	arquivoFinal[lenghtStringArquivoFinal] = '\0';
 	FILE *fp = fopen(arquivoFinal, "w");

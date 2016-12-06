@@ -55,9 +55,6 @@ int main(int argc,  char** argv){
 		if(argc == 3){
 
 			outFileName1 = remove_asm(argv[2]);
-			geraArquivoFinal(argv[2], outFileName1);
-			/* Chama pre-processamento.*/
-			processa_macros(outFileName1);
 			/* Chama algoritmo de duas passagens.*/
 			TwoPassAssembler(outFileName1, NO);
 		}
@@ -67,16 +64,12 @@ int main(int argc,  char** argv){
 			outFileName2 = remove_asm(argv[3]);
 
 			geraArquivoFinal(argv[2], outFileName1);
-			/* Chama pre-processamento.*/
-			processa_macros(outFileName1);
 			/* Chama algoritmo de duas passagens.*/
 			TwoPassAssembler(outFileName1, YES);
 
 			geraArquivoFinal(argv[3], outFileName2);
-			/* Chama pre-processamento.
-			processa_macros(outFileName2);
-			/* Chama algoritmo de duas passagens
-			TwoPassAssembler(outFileName2, YES);*/
+			/*Chama algoritmo de duas passagens*/
+			TwoPassAssembler(outFileName2, YES);
 		}
 		else{
 			outFileName1 = remove_asm(argv[2]);
@@ -84,20 +77,14 @@ int main(int argc,  char** argv){
 			outFileName3 = remove_asm(argv[4]);
 
 			geraArquivoFinal(argv[2], outFileName1);
-			/* Chama pre-processamento.*/
-			processa_macros(outFileName1);
 			/* Chama algoritmo de duas passagens.*/
 			TwoPassAssembler(outFileName1, YES);
 
 			geraArquivoFinal(argv[3], outFileName2);
-			/* Chama pre-processamento.*/
-			processa_macros(outFileName2);
 			/* Chama algoritmo de duas passagens.*/
 			TwoPassAssembler(outFileName2, YES);
 			
 			geraArquivoFinal(argv[4], outFileName3);
-			/* Chama pre-processamento.*/
-			processa_macros(outFileName3);
 			/* Chama algoritmo de duas passagens.*/
 			TwoPassAssembler(outFileName3, NO);
 		}

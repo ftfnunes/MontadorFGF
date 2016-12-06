@@ -849,7 +849,7 @@ table *first_pass(FILE *fp, int *is_ok, table **td_param, int is_module){
 		error_flag = ERRO;
 	}
 
-	if(has_stop == ERRO){
+	if(has_stop == ERRO && is_module == NO){
 		printf("Linha %s - Erro Semantico: programa sem instrucao stop\n", line_number);
 	}
 
@@ -1016,7 +1016,7 @@ int TwoPassAssembler(char *inFileName, int is_module){
 	t_line *aux;
 
 	sprintf(outputName, "%s.o", inFileName);
-	sprintf(inputName, "%s.mcr", inFileName);
+	sprintf(inputName, "%s.pre", inFileName);
 
 	temp = fopen("temp", "w+");
 	outfp = fopen(outputName, "w");
