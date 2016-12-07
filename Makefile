@@ -1,6 +1,6 @@
 IDIR =./include
 CC=gcc
-CFLAGS=-ansi -Wall -I$(IDIR)
+CFLAGS=-ansi -Wall -g -I$(IDIR)
 
 SRC_DIR = ./src
 
@@ -24,7 +24,12 @@ Simulador: obj/simulador.o
 
 obj/simulador.o: $(SRC_DIR)/simulador.c $(IDIR)/simulador.h
 	$(CC) -c -o $@ src/simulador.c $(CFLAGS)
-	
+
+Carregador: obj/carregador.o obj/simulador.o	
+	$(CC) -o $@ $(SRC_DIR)/carregador.c $(ODIR)/simulador.o $(CFLAGS)
+
+Ligador: $(IDIR)/ligador.h
+	$(CC) -o $@ $(SRC_DIR)/ligador.c $(CFLAGS)
 
 .PHONY: clean
 

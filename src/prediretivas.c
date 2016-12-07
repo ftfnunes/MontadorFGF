@@ -496,7 +496,7 @@ void geraArquivoFinal(char *nomeArquivoOriginal, char *nomeArquivoFinal){
 	
 	/*aloca a string auxiliar para receber o nome do arquivo final + 5, ou seja, para receber o formato .pre + \0*/
 	
-	arquivoEntrada = NULL;
+	arquivoEntrada = NULL;	
 	arquivoFinal = (char*)malloc(lenghtStringArquivoFinal*sizeof(char));
 	numero_de_linhas = 0;
 	

@@ -12,16 +12,20 @@ int *relocador(FILE *fp, chunk *c, int n_chunks){
 	fseek(fp, 3, SEEK_SET);
 
 	fgets(buffer, 200, fp); /* Pega "H: " mais o nome do arquivo.*/
+	printf("nomearq: %s\n", buffer);
 	
 	fseek(fp, 3, SEEK_CUR); /* Avança por "H: ".*/
 	fscanf(fp,"%d", &tam_prog);/* Pega o tamanho do programa.*/
+	printf("tamprog: %d\n", tam_prog);
 
 
-	while(fgetc(fp) != '\n');
+	if(fgetc(fp) == '\n'){
+		printf("É um barra n. \n");
+	}
 
 	prog = (int *)malloc((tam_prog)*sizeof(int));/* Aloca memória para o array de int que armazenará o código. */
 	enderecos_prog = (int *)malloc((tam_prog)*sizeof(int)); /* Aloca memória para o array de int que armazenará os endereços do código. */ 
-	if (!prog)	{
+	if (!prog || !enderecos_prog)	{
 		printf("Memória para alocar o programa não alocada.\n");
 		exit(1);
 	}
@@ -32,19 +36,23 @@ int *relocador(FILE *fp, chunk *c, int n_chunks){
 		exit(1);
 	}
 
-	fseek(fp, 3, SEEK_CUR); /* Avança por "H: ".*/
-	for (i = 0; i < tam_prog; ++i)
+	fseek(fp, 4, SEEK_CUR); /* Avança por "H: ".*/
+	for (i = 0; i < tam_prog; ++i){
 		mapa_bits[i] = fgetc(fp);
+		printf("pegando mapa_bits[%d]: %c\n", i, mapa_bits[i]);
+	}
+
+	
 
 
 	fgetc(fp); /* Pega o '\n' no final da linha. */
 
 
-	fseek(fp, 2, SEEK_CUR); /* Avança por "T:".*/
+	fseek(fp, 3, SEEK_CUR); /* Avança por "T:".*/
 
 
 	for (i = 0; i < tam_prog; ++i)
-		fscanf(fp, " %d", &prog[i]);/* Adquire uma unidade do código, seja instrução ou endereço. */
+		fscanf(fp, "%d", &prog[i]);/* Adquire uma unidade do código, seja instrução ou endereço. */
 	
 
 	fgetc(fp); /* Pega o '\n' final ou o EOF.*/
@@ -58,12 +66,24 @@ int *relocador(FILE *fp, chunk *c, int n_chunks){
 	for(i = 0, pos_prog = 0; codigo_a_carregar != 0; ++i){	/* Laço que define os endereços das partes do programa. */
 
 		pos_prog = define_enderecos(enderecos_prog, tam_prog, pos_prog, c[i].endereco, (c[i].endereco+c[i].tam));
-		codigo_a_carregar = (((codigo_a_carregar-c[i].tam)<0)? 0:(codigo_a_carregar-c[i].tam));	
+		codigo_a_carregar = (((codigo_a_carregar-c[i].tam)<=0)? 0:(codigo_a_carregar-c[i].tam));	
 	}
 
+	for (i = 0; i < tam_prog; ++i){
+		printf("antes reloca mapa_bits[%d]: %c\n", i, mapa_bits[i]);
+	}
+	
 	reloca(prog, enderecos_prog, mapa_bits, tam_prog);
 
+	for (i = 0; i < tam_prog; ++i){
+		printf("enderecos_prog[%d]: %d\n", i, enderecos_prog[i]);
+		printf("prog[%d]: %d\n", i, prog[i]);
+		printf("mapa_bits[%d]: %c\n", i, mapa_bits[i]);
+	}
+
+	printf("Linha 66.\n");
 	free(enderecos_prog);
+	printf("Linha 68.\n");
 	free(mapa_bits);
 	return prog;
 }
@@ -71,7 +91,7 @@ int *relocador(FILE *fp, chunk *c, int n_chunks){
 int define_enderecos(int *enderecos_prog, int tam_prog, int pos_prog, int init_chunk, int fim_chunk){
 	int i, p_prog = pos_prog;
 
-	for(i = init_chunk; i < fim_chunk || p_prog == tam_prog; ++i){
+	for(i = init_chunk; i < fim_chunk && p_prog != tam_prog; ++i){
 		enderecos_prog[p_prog] = i;
 		++p_prog;
 	}
@@ -157,7 +177,9 @@ int main(int argc, char *argv[]){
 
 	fclose(fp);
 	fclose(saida);
+	printf("Linha 162.\n");
 	free(c);
+	printf("Linha 164.\n");
 	free(prog);
 	return 0;
 }

@@ -86,7 +86,7 @@ int main(int argc,  char** argv){
 			
 			geraArquivoFinal(argv[4], outFileName3);
 			/* Chama algoritmo de duas passagens.*/
-			TwoPassAssembler(outFileName3, NO);
+			TwoPassAssembler(outFileName3, YES);
 		}
 	}
 	else

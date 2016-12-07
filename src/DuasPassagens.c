@@ -245,10 +245,10 @@ int insert_symbol(table *tb, char *token, int value, int section){
 		tb->last = newLine;
 	}
 	else{
-		if(find_symbol(tb, token) != NULL){
+		/*if(find_symbol(tb, token) != NULL){
 			free(newLine);
 			return ALRD_DEFINED;
-		}
+		}*/
 		tb->last->next = newLine;
 		tb->last = newLine;
 	}
@@ -297,8 +297,10 @@ int eval_arg(symbol **smbl, table *ts, char *line_number, int inst_code, int is_
 		return ERRO;
 	}
 
+
 	if(sym->is_ext == YES){
-		insert_symbol(tu, sym->token, end_count, sym->section);
+		/*printf("arg %d %s %s\n", end_count, sym->token, sym->is_ext == YES ? "YES" : "NO" );*/
+		insert_symbol(tu, sym->token, end_count, sym->section);	
 	}
 	number = sym->value;
 	aux = aux->next;
@@ -1034,8 +1036,8 @@ int TwoPassAssembler(char *inFileName, int is_module){
 
 	write_code(temp, outfp);
 
-/*
-	for(aux = tb->first; aux != NULL; aux = aux->next){
+
+	/*for(aux = tb->first; aux != NULL; aux = aux->next){
 		printf("%s %d %s\n", aux->token, aux->value, aux->is_ext == YES ? "YES" : "NO" );
 	}
 	printf("\n\n\n");
