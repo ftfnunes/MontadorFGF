@@ -30,7 +30,6 @@ void leArquivoObjeto(char *arquivoObjeto){
 	while(!feof(fp)){
 		fscanf(fp, "%d", &vetorMemoria[i]);
 		if(feof(fp)) break; /*para nao duplicar o ultimo numero do arquivo, caso tenha quebra de linha*/
-		printf("%d ", vetorMemoria[i]);
 		i++;
 	}
 	numero_elementos = i;

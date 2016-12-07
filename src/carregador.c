@@ -5,23 +5,26 @@
 #include "simulador.h"
 
 
-int *relocador(FILE *fp, chunk *c, int n_chunks){
+Printing *relocador(FILE *fp, chunk *c, int n_chunks){
 	char buffer[200], *mapa_bits;
 	int tam_prog, i, *prog, codigo_a_carregar, pos_prog, *enderecos_prog;
+	Printing *p = NULL;
+
+	p = (Printing *)malloc(sizeof(Printing));
+	if(!p){
+		printf("estrutura Printing não alocada.\n");
+		exit(1);
+	}
 
 	fseek(fp, 3, SEEK_SET);
 
 	fgets(buffer, 200, fp); /* Pega "H: " mais o nome do arquivo.*/
-	printf("nomearq: %s\n", buffer);
 	
 	fseek(fp, 3, SEEK_CUR); /* Avança por "H: ".*/
 	fscanf(fp,"%d", &tam_prog);/* Pega o tamanho do programa.*/
-	printf("tamprog: %d\n", tam_prog);
 
 
-	if(fgetc(fp) == '\n'){
-		printf("É um barra n. \n");
-	}
+	fgetc(fp);
 
 	prog = (int *)malloc((tam_prog)*sizeof(int));/* Aloca memória para o array de int que armazenará o código. */
 	enderecos_prog = (int *)malloc((tam_prog)*sizeof(int)); /* Aloca memória para o array de int que armazenará os endereços do código. */ 
@@ -39,7 +42,7 @@ int *relocador(FILE *fp, chunk *c, int n_chunks){
 	fseek(fp, 4, SEEK_CUR); /* Avança por "H: ".*/
 	for (i = 0; i < tam_prog; ++i){
 		mapa_bits[i] = fgetc(fp);
-		printf("pegando mapa_bits[%d]: %c\n", i, mapa_bits[i]);
+		/*printf("pegando mapa_bits[%d]: %c\n", i, mapa_bits[i]);*/
 	}
 
 	
@@ -69,23 +72,23 @@ int *relocador(FILE *fp, chunk *c, int n_chunks){
 		codigo_a_carregar = (((codigo_a_carregar-c[i].tam)<=0)? 0:(codigo_a_carregar-c[i].tam));	
 	}
 
-	for (i = 0; i < tam_prog; ++i){
+	/*for (i = 0; i < tam_prog; ++i){
 		printf("antes reloca mapa_bits[%d]: %c\n", i, mapa_bits[i]);
-	}
+	}*/
 	
 	reloca(prog, enderecos_prog, mapa_bits, tam_prog);
 
-	for (i = 0; i < tam_prog; ++i){
+	/*for (i = 0; i < tam_prog; ++i){
 		printf("enderecos_prog[%d]: %d\n", i, enderecos_prog[i]);
 		printf("prog[%d]: %d\n", i, prog[i]);
 		printf("mapa_bits[%d]: %c\n", i, mapa_bits[i]);
-	}
+	}*/
 
-	printf("Linha 66.\n");
-	free(enderecos_prog);
-	printf("Linha 68.\n");
+	p->endereco = enderecos_prog;
+	p->prog = prog;
+
 	free(mapa_bits);
-	return prog;
+	return p;
 }
 
 int define_enderecos(int *enderecos_prog, int tam_prog, int pos_prog, int init_chunk, int fim_chunk){
@@ -109,14 +112,14 @@ void reloca(int *prog, int *enderecos_prog, char *mapa_bits, int tam_prog){
 
 }
 
-void imagem_memoria(FILE *saida, int *prog, int tam_prog){
+void imagem_memoria(FILE *saida, Printing *p, int tam_prog){
 	int i;
 
 	for (i = 0; i < tam_prog; ++i)
-		if(i == tam_prog-1)
-			fprintf(saida, "%d", prog[i]);
+		if(i != tam_prog-1)
+			fprintf(saida, "End %d: %d\n", p->endereco[i], p->prog[i]);
 		else
-			fprintf(saida, "%d ", prog[i]);
+			fprintf(saida, "End %d: %d", p->endereco[i], p->prog[i]);
 }
 
 
@@ -126,6 +129,7 @@ int main(int argc, char *argv[]){
 	FILE *fp, *saida;
 	int n_chunks, i, tam_prog, tamTotalChunks = 0, *prog;
 	chunk *c;
+	Printing *p;
 
 
 	simulacao(argv[1]);
@@ -165,21 +169,21 @@ int main(int argc, char *argv[]){
 		return 0;
 	}
 
-	prog = relocador(fp, c, n_chunks);
+	p = relocador(fp, c, n_chunks);
 
 	saida = fopen("memoria.im", "w+");
 	if(!saida){
 		printf("Problema na abertura do arquivo de saída.\n");
 		exit(1);
 	}
-	imagem_memoria(saida, prog, tam_prog);
+	imagem_memoria(saida, p, tam_prog);
 
 
 	fclose(fp);
 	fclose(saida);
-	printf("Linha 162.\n");
 	free(c);
-	printf("Linha 164.\n");
-	free(prog);
+	free(p->prog);
+	free(p->endereco);
+	free(p);
 	return 0;
 }
